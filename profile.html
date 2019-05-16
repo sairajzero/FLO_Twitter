@@ -1,0 +1,173 @@
+<html lang="en">
+
+<head>
+  <title>FLO Tweeter</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Font Awesome File -->
+
+  <script type="text/javascript" src="registerID.js"></script>
+  <script type="text/javascript" src="app.js"></script>
+  <script type="text/javascript" src="profile.js"></script>
+
+</head>
+
+<body onload = "viewProfile();">
+
+<div class="navbar navbar-default navbar-static-top">
+  <div class="container">
+    <div class="navbar-collapse navbar-collapse-1 collapse" aria-expanded="true">
+      <ul class="nav navbar-nav">
+        <li>
+          <a href="home.html"><span class="glyphicon glyphicon-home"></span> Home</a>
+        </li>
+        <li class="active">
+          <a href="profile.html"><span class="glyphicon glyphicon-user"></span> Profiles</a>
+        </li>
+        <li>
+          <a href="#"><span class="glyphicon glyphicon-envelope"></span> Messages</a>
+        </li>
+      </ul>
+
+      <div class="navbar-form navbar-right">
+        <div class="form-group has-feedback">
+          <input type="text" class="form-control-nav" id="search" aria-describedby="search1">
+          <span class="glyphicon glyphicon-search form-control-feedback" aria-hidden="true"></span>
+        </div>
+
+        <button class="btn btn-default btn-sm" onclick="logout()">
+          <span class="glyphicon glyphicon-log-out"> </span> Log out
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-3">
+      <div class="panel panel-default">
+        <div class="panel-body" id="profileInfo">
+          <a href="#"><img class="img-responsive" alt="" src="http://placehold.it/800x500"></a>
+          <div class="row">
+            <div class="col-xs-3">
+              <h5>
+                <small>TWEETS</small>
+                <a href="#">1,545</a>
+              </h5>
+            </div>
+            <div class="col-xs-4">
+              <h5>
+                <small>FOLLOWING</small>
+                <a href="#">251</a>
+              </h5>
+            </div>
+            <div class="col-xs-5">
+              <h5>
+                <small>FOLLOWERS</small>
+                <a href="#">153</a>
+              </h5>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-default panel-custom">
+      </div>
+    </div>
+    <div class="col-sm-6">
+      <div class="panel panel-info">
+
+        <div class="panel-body" id="profileBody">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-sm-3">
+      <div class="panel panel-default panel-custom">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            Who to follow
+            <small><a href="#">Refresh</a> ● <a href="#">View all</a></small>
+          </h3>
+        </div>
+        <div class="panel-body">
+          <div class="media">
+            <div class="media-left">
+              <img src="http://placehold.it/32x32" alt="" class="media-object img-rounded">
+            </div>
+            <div class="media-body">
+              <h4 class="media-heading">Nome e cognome</h4>
+              <a href="#" class="btn btn-default btn-xs">
+                +
+                <span class="glyphicon glyphicon-user"></span>
+                Follow
+              </a>
+            </div>
+          </div>
+          <div class="media">
+            <div class="media-left">
+              <img src="http://placehold.it/32x32" alt="" class="media-object img-rounded">
+            </div>
+            <div class="media-body">
+              <h4 class="media-heading">Nome e cognome</h4>
+              <a href="#" class="btn btn-default btn-xs">
+                +
+                <span class="glyphicon glyphicon-user"></span>
+                Follow
+              </a>
+            </div>
+          </div>
+          <div class="media">
+            <div class="media-left">
+              <img src="http://placehold.it/32x32" alt="" class="media-object img-rounded">
+            </div>
+            <div class="media-body">
+              <h4 class="media-heading">Nome e cognome</h4>
+              <a href="#" class="btn btn-default btn-xs">
+                +
+                <span class="glyphicon glyphicon-user"></span>
+                Follow
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="panel-footer">
+          <a href="www.google.it">
+            <span class="glyphicon glyphicon-user"></span>
+            Find people you know
+          </a>
+        </div>
+      </div>
+      <div class="well well-sm">
+        <ul class="list-inline">
+          <li>© 2015 Twitter</li>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Help</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Cookies</a></li>
+          <li><a href="#">Ads info</a></li>
+          <li><a href="#">Brand</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Status</a></li>
+          <li><a href="#">Apps</a></li>
+          <li><a href="#">Jobs</a></li>
+          <li><a href="#">Advertise</a></li>
+          <li><a href="#">Businesses</a></li>
+          <li><a href="#">Media</a></li>
+          <li><a href="#">Developers</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+</body>
+
+</html>
