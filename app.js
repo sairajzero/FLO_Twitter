@@ -230,3 +230,19 @@ function logout(){
   sessionStorage.clear();
   location.reload();
 }
+
+function listProfiles(){
+  console.log("listProfiles");
+  var profileList =  document.getElementById("profileList");
+  profileList.innerHTML = "";
+  for (p in profiles){
+    var element =  document.createElement("div");
+    element.setAttribute("class", "media");
+    element.innerHTML = `<a href="profile.html?floID=${p}"><div class="media-body">
+              <h5 class="media-heading">${profiles[p].name}</h5>
+              <small>@${p}</small>
+            </div></a>`
+    profileList.appendChild(element);
+  }
+  //document.getElementById("profileInfo").style.display = "none";
+}

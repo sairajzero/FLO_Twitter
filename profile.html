@@ -51,26 +51,31 @@
       <div class="panel panel-default">
         <div class="panel-body" id="profileInfo">
           <a href="#"><img class="img-responsive" alt="" src="http://placehold.it/800x500"></a>
+          <h5>
+            <div id="profileName"></div>
+            <small id="profileFloID"></small>
+          </h5>
           <div class="row">
             <div class="col-xs-3">
               <h5>
                 <small>TWEETS</small>
-                <a href="#">1,545</a>
+                <a href="#" id="tweetCount">-</a>
               </h5>
             </div>
             <div class="col-xs-4">
               <h5>
                 <small>FOLLOWING</small>
-                <a href="#">251</a>
+                <a href="#" id="followingCount">-</a>
               </h5>
             </div>
-            <div class="col-xs-5">
+            <div class="col-xs-4">
               <h5>
                 <small>FOLLOWERS</small>
-                <a href="#">153</a>
+                <a href="#" id="followersCount">-</a>
               </h5>
             </div>
           </div>
+          <button onclick="follow()" id="follow-button" class="btn btn-info btn-xs" disabled></button>
         </div>
       </div>
 
@@ -87,81 +92,17 @@
     </div>
 
     <div class="col-sm-3">
+
       <div class="panel panel-default panel-custom">
-        <div class="panel-heading">
+        <div class="panel-footer">
           <h3 class="panel-title">
-            Who to follow
-            <small><a href="#">Refresh</a> ● <a href="#">View all</a></small>
+            Profiles
           </h3>
         </div>
-        <div class="panel-body">
-          <div class="media">
-            <div class="media-left">
-              <img src="http://placehold.it/32x32" alt="" class="media-object img-rounded">
-            </div>
-            <div class="media-body">
-              <h4 class="media-heading">Nome e cognome</h4>
-              <a href="#" class="btn btn-default btn-xs">
-                +
-                <span class="glyphicon glyphicon-user"></span>
-                Follow
-              </a>
-            </div>
-          </div>
-          <div class="media">
-            <div class="media-left">
-              <img src="http://placehold.it/32x32" alt="" class="media-object img-rounded">
-            </div>
-            <div class="media-body">
-              <h4 class="media-heading">Nome e cognome</h4>
-              <a href="#" class="btn btn-default btn-xs">
-                +
-                <span class="glyphicon glyphicon-user"></span>
-                Follow
-              </a>
-            </div>
-          </div>
-          <div class="media">
-            <div class="media-left">
-              <img src="http://placehold.it/32x32" alt="" class="media-object img-rounded">
-            </div>
-            <div class="media-body">
-              <h4 class="media-heading">Nome e cognome</h4>
-              <a href="#" class="btn btn-default btn-xs">
-                +
-                <span class="glyphicon glyphicon-user"></span>
-                Follow
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="panel-footer">
-          <a href="www.google.it">
-            <span class="glyphicon glyphicon-user"></span>
-            Find people you know
-          </a>
+        <div class="panel-body" id="profileList">
         </div>
       </div>
-      <div class="well well-sm">
-        <ul class="list-inline">
-          <li>© 2015 Twitter</li>
-          <li><a href="#">About</a></li>
-          <li><a href="#">Help</a></li>
-          <li><a href="#">Terms</a></li>
-          <li><a href="#">Privacy</a></li>
-          <li><a href="#">Cookies</a></li>
-          <li><a href="#">Ads info</a></li>
-          <li><a href="#">Brand</a></li>
-          <li><a href="#">Blog</a></li>
-          <li><a href="#">Status</a></li>
-          <li><a href="#">Apps</a></li>
-          <li><a href="#">Jobs</a></li>
-          <li><a href="#">Advertise</a></li>
-          <li><a href="#">Businesses</a></li>
-          <li><a href="#">Media</a></li>
-          <li><a href="#">Developers</a></li>
-        </ul>
-      </div>
+
     </div>
   </div>
 </div>

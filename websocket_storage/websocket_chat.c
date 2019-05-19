@@ -11,10 +11,14 @@ static struct mg_serve_http_opts s_http_server_opts;
 static char serverpass[100];
 static struct mg_connection *selfClient = NULL;
 
-struct tweetData
-{
+struct tweetData{
   int id;
   char data[5000];
+};
+
+struct followData{
+  char floID[35];
+  char sign[150];
 };
 
 static void signal_handler(int sig_num) {
@@ -56,7 +60,7 @@ static void storeTweet(struct mg_connection *nc,const struct mg_str msg){
   FILE *fptr;
   fptr = fopen("tweet.bin","ab");
   if(fptr == NULL){
-    printf("Error in opening tweet file");
+    printf("Error in opening tweet.bin\n");
     return;
   }
   fseek(fptr,0,SEEK_END);
@@ -85,7 +89,7 @@ static void sendTweets(struct mg_connection *nc, const struct mg_str d){
   FILE *fptr;
   fptr = fopen("tweet.bin","rb");
   if(fptr == NULL){
-    printf("Error in opening tweet file\n");
+    printf("Error in opening tweet.bin\n");
     return;
   }
   fseek(fptr, n*sizeof(tweet), SEEK_SET);
@@ -97,6 +101,122 @@ static void sendTweets(struct mg_connection *nc, const struct mg_str d){
   fclose(fptr);
 }
 
+static void Follower(const struct mg_str d){
+  struct followData data;
+  snprintf(data.floID, sizeof(data.floID), "%.*s", (int) (34), &d.p[1]);
+  snprintf(data.sign, sizeof(data.sign), "%.*s", (int) (d.len-36), &d.p[36]);
+  printf("Follower : %s\n",data.floID);
+  FILE *fptr;
+  fptr = fopen("followers.bin","ab");
+  if(fptr == NULL){
+    printf("Error in opening followers.bin\n");
+    return;
+  }
+  fseek(fptr,0,SEEK_END);
+  fwrite(&data,sizeof(data),1,fptr);
+  fclose(fptr);
+}
+
+static void Unfollower(const struct mg_str d){
+  char floID[35];
+  struct followData data;
+  snprintf(floID, sizeof(floID), "%.*s", (int) (34), &d.p[1]);
+  printf("Unfollower : %s\n",floID);
+  FILE *fp;
+  FILE *fp_tmp;
+  fp = fopen("followers.bin", "rb");
+  if (!fp) {
+    printf("Error in opening followers.bin\n");
+    return;
+  }
+  fp_tmp = fopen("tmp.bin", "wb");
+  if (!fp) {
+    printf("Error in opening tmp.bin\n");
+    return;
+  }
+  while(fread(&data,sizeof(data),1,fp)){
+    if(strcmp(data.floID,floID)) //floID != follower.floID
+      fwrite(&data,sizeof(data),1,fp_tmp);
+  }
+  fclose(fp);
+  fclose(fp_tmp);
+  remove("followers.bin");
+  rename("tmp.bin", "followers.bin");
+  return;
+}
+
+static void follow(const struct mg_str d){
+  struct followData data;
+  snprintf(data.floID, sizeof(data.floID), "%.*s", (int) (34), &d.p[1]);
+  snprintf(data.sign, sizeof(data.sign), "%.*s", (int) (d.len-36), &d.p[36]);
+  printf("follow : %s\n",data.floID);
+  FILE *fptr;
+  fptr = fopen("following.bin","ab");
+  if(fptr == NULL){
+    printf("Error in opening following.bin\n");
+    return;
+  }
+  fseek(fptr,0,SEEK_END);
+  fwrite(&data,sizeof(data),1,fptr);
+  fclose(fptr);
+}
+
+static void unfollow(const struct mg_str d){
+  char floID[35];
+  struct followData data;
+  snprintf(floID, sizeof(floID), "%.*s", (int) (34), &d.p[1]);
+  printf("unfollow : %s\n",floID);
+  FILE *fp;
+  FILE *fp_tmp;
+  fp = fopen("following.bin", "rb");
+  if (!fp) {
+    printf("Error in opening following.bin\n");
+    return;
+  }
+  fp_tmp = fopen("tmp.bin", "wb");
+  if (!fp) {
+    printf("Error in opening tmp.bin\n");
+    return;
+  }
+  while(fread(&data,sizeof(data),1,fp)){
+    if(strcmp(data.floID,floID)) //floID != follower.floID
+      fwrite(&data,sizeof(data),1,fp_tmp);
+  }
+  fclose(fp);
+  fclose(fp_tmp);
+  remove("following.bin");
+  rename("tmp.bin", "following.bin");
+  return;
+}
+
+static void storeIncoming(const struct mg_str msg){
+  char buf[5000];
+  snprintf(buf, sizeof(buf), "%.*s", (int) msg.len, msg.p);
+  FILE *fptr;
+  fptr = fopen("incoming.bin","ab");
+  if(fptr == NULL){
+    printf("Error in opening incoming.bin\n");
+    return;
+  }
+  fseek(fptr,0,SEEK_END);
+  fwrite(&buf,sizeof(buf),1,fptr);
+  fclose(fptr);
+}
+
+static void forwardIncomings(){
+  char buf[5000];
+  FILE *fptr;
+  fptr = fopen("incoming.bin","rb");
+  if(fptr == NULL){
+    printf("No new Incomings\n");
+    return;
+  }
+  while(fread(&buf,sizeof(buf),1,fptr)){
+    mg_send_websocket_frame(selfClient, WEBSOCKET_OP_TEXT, buf, strlen(buf));
+  }
+  fclose(fptr);
+  remove("incoming.bin");
+}
 static void ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
   switch (ev) {
     case MG_EV_WEBSOCKET_HANDSHAKE_DONE: {
@@ -108,30 +228,47 @@ static void ev_handler(struct mg_connection *nc, int ev, void *ev_data) {
       struct websocket_message *wm = (struct websocket_message *) ev_data;
       /* New websocket message. Tell everybody. */
       struct mg_str d = {(char *) wm->data, wm->size};
-      if (d.p[0] == '$'){
-        char pass[100];
-        snprintf(pass, sizeof(pass), "%.*s",(int)d.len-1, &d.p[1]);
-        if(!strcmp(pass,serverpass)){
-          if(selfClient!=NULL)
-            unicast(selfClient,mg_mk_str("$Another login is encountered! Please close/refresh this window"));
-          selfClient = nc;
-          unicast(selfClient,mg_mk_str("$Access Granted!"));
-          broadcast(nc, mg_mk_str("#+"));
-        }else
-          unicast(nc,mg_mk_str("$Access Denied!"));
-      }
-      else if(d.p[0] == '#'){
-        if(selfClient == NULL)
-          unicast(nc,mg_mk_str("#-"));
+      if(selfClient == nc){
+        if(d.p[0] == 'F')
+          Follower(d);
+        else if(d.p[0] == 'U')
+          Unfollower(d);
+        else if(d.p[0] == 'f')
+          follow(d);
+        else if(d.p[0] == 'u')
+          unfollow(d);
         else
-          unicast(nc,mg_mk_str("#+"));
+          storeTweet(nc, d);
+      }else{
+        if (d.p[0] == '$'){
+          char pass[100];
+          snprintf(pass, sizeof(pass), "%.*s",(int)d.len-1, &d.p[1]);
+          if(!strcmp(pass,serverpass)){
+            if(selfClient!=NULL)
+              unicast(selfClient,mg_mk_str("$Another login is encountered! Please close/refresh this window"));
+            selfClient = nc;
+            unicast(selfClient,mg_mk_str("$Access Granted!"));
+            forwardIncomings();
+          }else
+            unicast(nc,mg_mk_str("$Access Denied!"));
+        }
+        else if(d.p[0] == '#'){
+          if(selfClient == NULL)
+            unicast(nc,mg_mk_str("#-"));
+          else
+            unicast(nc,mg_mk_str("#+"));
+        }
+        else if(d.p[0] == '>'){
+          sendTweets(nc, d);
+        }
+        else {
+          if(selfClient==NULL)
+            storeIncoming(d);
+          else
+            unicast(selfClient,d);
+        }
       }
-      else if(d.p[0] == '>'){
-        sendTweets(nc, d);
-      }
-      else if(selfClient == nc){
-        storeTweet(nc, d);
-      }
+      
       break;
     }
     case MG_EV_HTTP_REQUEST: {

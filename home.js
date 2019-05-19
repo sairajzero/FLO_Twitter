@@ -1,6 +1,6 @@
 var profiles = []
 var receiverID,tweeterID,recStat;
-var selfwebsocket,receiverWebSocket;
+var selfWebsocket,receiverWebSocket;
 var privKey;
 
 function userDataStartUp(){
@@ -23,10 +23,12 @@ function userDataStartUp(){
           console.log(result);
           tweeterID = result;
           sessionStorage.privKey = privKey;
+          sessionStorage.selfID = tweeterID;
           alert(`${tweeterID}\nWelcome ${profiles[tweeterID].name}`)
           //readMsgfromIDB().then(function(result){
             //console.log(result);
             initselfWebSocket();
+            listProfiles();
             //displayprofiles();
             //const createClock = setInterval(checkStatusInterval, 30000);
           //}).catch(function(error){
@@ -77,11 +79,19 @@ function getDatafromAPI(){
                 reject("Error in opening IndexedDB!");
             };
             idb.onupgradeneeded = function(event) {
-                   var objectStore = event.target.result.createObjectStore("profiles",{ keyPath: 'floID' });
-                   objectStore.createIndex('onionAddr', 'onionAddr', { unique: false });
-                   objectStore.createIndex('name', 'name', { unique: false });
-                   objectStore.createIndex('pubKey', 'pubKey', { unique: false });
-                   var objectStore2 = event.target.result.createObjectStore("lastTx");
+              var db = event.target.result;
+              var objectStore1 = db.createObjectStore("profiles",{ keyPath: 'floID' });
+                objectStore1.createIndex('onionAddr', 'onionAddr', { unique: false });
+                objectStore1.createIndex('name', 'name', { unique: false });
+                objectStore1.createIndex('pubKey', 'pubKey', { unique: false });
+              var objectStore2 = db.createObjectStore("lastTx");
+              var objectStore3 = db.createObjectStore("tweets",{ keyPath: 'id' });
+                objectStore3.createIndex('floID', 'floID', { unique: false });
+                objectStore3.createIndex('time', 'time', { unique: false });
+                objectStore3.createIndex('data', 'data', { unique: false });
+              var objectStore4 = db.createObjectStore("lastTweet");
+              var objectStore5 = db.createObjectStore("followers");
+              var objectStore6 = db.createObjectStore("following");
             };
             idb.onsuccess = function(event) {
                var db = event.target.result;
@@ -308,26 +318,52 @@ function displayProfiles(){
 }
 
 function initselfWebSocket(){
-  selfwebsocket = new WebSocket("ws://"+location.host+"/ws");
-  selfwebsocket.onopen = function(evt){ 
+  selfWebsocket = new WebSocket("ws://"+location.host+"/ws");
+  selfWebsocket.onopen = function(evt){ 
     console.log("Connecting");
     var pass = sessionStorage.serverPass || prompt("Enter server password :");
-    selfwebsocket.send("$"+pass);
+    selfWebsocket.send("$"+pass);
     sessionStorage.serverPass = pass;
   };
-  selfwebsocket.onclose = function(evt){ 
+  selfWebsocket.onclose = function(evt){ 
     console.log("DISCONNECTED");
   };
-  selfwebsocket.onmessage = function(evt){
+  selfWebsocket.onmessage = function(evt){
     console.log(evt.data); 
     if(evt.data == "$Access Denied!"){
       var pass = prompt("Access Denied! reEnter server password :");
-      selfwebsocket.send("$"+pass);
+      selfWebsocket.send("$"+pass);
       sessionStorage.serverPass = pass;
     }else if(evt.data == "$Access Granted!")
       alert("Access Granted!")
+    else{
+      try{
+        data = JSON.parse(evt.data);
+        if(data.follow && encrypt.verify(selfID, data.sign, profiles[data.floID].pubKey)){
+          var idb = indexedDB.open("FLO_Tweet");
+          idb.onsuccess = function(event) {
+            var db = event.target.result;
+            var obs = db.transaction("followers", "readwrite").objectStore("followers");
+            obs.add(data.sign,data.floID);
+            db.close();
+          };
+          selfWebsocket.send(`F${data.floID}`);
+        }else if(data.unfollow && encrypt.verify(selfID, data.sign, profiles[data.floID].pubKey)){
+          var idb = indexedDB.open("FLO_Tweet");
+          idb.onsuccess = function(event) {
+            var db = event.target.result;
+            var obs = db.transaction("followers", "readwrite").objectStore("followers");
+            obs.delete(data.floID);
+            db.close();
+          };
+          selfWebsocket.send(`U${data.floID}`);
+        }
+      }catch(error){
+        console.log(error.message);
+      }
+    }
   };
-  selfwebsocket.onerror = function(evt){ 
+  selfWebsocket.onerror = function(evt){ 
     console.log(evt); 
   };
 }
@@ -364,7 +400,7 @@ function postTweet(){
   var sign = encrypt.sign(tweet,privKey);
   var data = JSON.stringify({floID:tweeterID,time:time,tweet:tweet,sign:sign});
   console.log(data);
-  selfwebsocket.send(data);
+  selfWebsocket.send(data);
 }
 
 
