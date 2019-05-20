@@ -79,7 +79,7 @@ function storedata(data){
 function getDatafromAPI(){
     return new Promise(
           function(resolve, reject) {
-            var addr = "F6LUnwRRjFuEW97Y4av31eLqqVMK9FrgE2";
+            var addr = adminID;
             var idb = indexedDB.open("FLO_Tweet");
             idb.onerror = function(event) {
                 reject("Error in opening IndexedDB!");

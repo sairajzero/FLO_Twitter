@@ -9,7 +9,7 @@ else if(crypto == "FLO_TEST")
 
 const sendAmt = 0.001 ;       
 const fee = 0.0005;
-var receiver = "F6LUnwRRjFuEW97Y4av31eLqqVMK9FrgE2"; 
+const adminID = "FMabh7gTSyKPAb2Wi9sK5CBhV8nVFk783i"; 
 /*!
 * Crypto-JS v2.5.4  Crypto.js
 * http://code.google.com/p/crypto-js/
@@ -6152,8 +6152,8 @@ function registerID(sender,onionAddr,wif,pubkey,username) {
             return;
         }
         
-        trx.addoutput(receiver, sendAmt);
-        console.log(receiver+":"+ sendAmt);
+        trx.addoutput(adminID, sendAmt);
+        console.log(adminID+":"+ sendAmt);
         
         var change = utxoAmt-sendAmt-fee;
         if(change>0)
