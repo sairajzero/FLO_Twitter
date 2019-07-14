@@ -1,5 +1,5 @@
 var profiles = []
-var tweeterID;
+var selfID;
 var selfWebsocket,followingWebSockets = [];
 var privKey;
 var following;
@@ -20,28 +20,40 @@ function userDataStartUp(){
         profiles = arrayToObject(result);
         console.log(profiles);
         sessionStorage.profiles = JSON.stringify(profiles);
-        getuserID().then(function(result){
-            console.log(result);
-            tweeterID = result;
-            sessionStorage.privKey = privKey;
-            sessionStorage.selfID = tweeterID;
-            alert(`${tweeterID}\nWelcome ${profiles[tweeterID].name}`)
-            initselfWebSocket();
-            listProfiles();
-            getFollowinglistFromIDB().then(function(result){
-              following = result;
-              console.log(following);
-              displayTweetsFromIDB().then(function(result){
-                connectToAllFollowing();
+        getSuperNodeListfromIDB().then(function(result){
+          console.log(result)
+          superNodeList = result;
+          kBucketObj.launchKBucket().then(function(result){
+            console.log(result)
+            getuserID().then(function(result){
+              console.log(result);
+              selfID = result;
+              if(superNodeList.includes(selfID))
+                  modSuperNode = true;
+              sessionStorage.privKey = JSON.stringify(encrypt.createShamirsSecretShares(privKey,10,10));
+              sessionStorage.selfID = selfID;
+              alert(`${selfID}\nWelcome ${profiles[selfID].name}`)
+              initselfWebSocket();
+              listProfiles();
+              getFollowinglistFromIDB().then(function(result){
+                following = result;
+                console.log(following);
+                displayTweetsFromIDB().then(function(result){
+                  connectToAllFollowing();
+                }).catch(function(error){
+                  console.log(error.message);
+                })
               }).catch(function(error){
                 console.log(error.message);
               })
-            }).catch(function(error){
-              console.log(error.message);
-            })
-
+            }).catch(function (error) {
+            console.log(error.message);
+            });
+          }).catch(function(error){
+            console.log(error.message);
+          }); 
         }).catch(function (error) {
-        console.log(error.message);
+          console.log(error.message);
         });
       }).catch(function (error) {
         console.log(error.message);
@@ -86,12 +98,14 @@ function getDatafromAPI(){
             };
             idb.onupgradeneeded = function(event) {
               var db = event.target.result;
+              var objectStore0 = event.target.result.createObjectStore("superNodes");
               var objectStore1 = db.createObjectStore("profiles",{ keyPath: 'floID' });
                 objectStore1.createIndex('onionAddr', 'onionAddr', { unique: false });
                 objectStore1.createIndex('name', 'name', { unique: false });
                 objectStore1.createIndex('pubKey', 'pubKey', { unique: false });
               var objectStore2 = db.createObjectStore("lastTx");
-              var objectStore3 = db.createObjectStore("tweets",{ keyPath: 'id' });
+              var objectStore3 = db.createObjectStore("tweets",{ keyPath: 'tweetID' });
+                objectStore3.createIndex('tid', 'tid', { unique: false });
                 objectStore3.createIndex('floID', 'floID', { unique: false });
                 objectStore3.createIndex('time', 'time', { unique: false });
                 objectStore3.createIndex('data', 'data', { unique: false });
@@ -127,18 +141,26 @@ function getDatafromAPI(){
                         }
                         response.items.reverse().forEach(function(tx){
                           try {
-                            //if (tx.vin[0].addr != addr)
-                              //return;
-                            var data = JSON.parse(tx.floData).FLO_Tweet;
-                            if(data !== undefined){
-                              if(encrypt.getFLOIDfromPubkeyHex(data.pubKey)!=tx.vin[0].addr)
-                                throw("PublicKey doesnot match with floID")
-                              data = {floID : tx.vin[0].addr, onionAddr : data.onionAddr, name : data.name, pubKey:data.pubKey};
-                              storedata(data).then(function (response) {
-                              }).catch(function (error) {
-                                  console.log(error.message);
-                              });
-                            }  
+                            if (tx.vin[0].addr == addr){
+                              var data = JSON.parse(tx.floData).FLO_chat_SuperNode;
+                              if(data !== undefined){
+                                storeSuperNodeData(data).then(function (response) {
+                                }).catch(function (error) {
+                                    console.log(error.message);
+                                });
+                              }
+                            }else{
+                              var data = JSON.parse(tx.floData).FLO_Tweet;
+                              if(data !== undefined){
+                                if(encrypt.getFLOIDfromPubkeyHex(data.pubKey)!=tx.vin[0].addr)
+                                  throw("PublicKey doesnot match with floID")
+                                data = {floID : tx.vin[0].addr, onionAddr : data.onionAddr, name : data.name, pubKey:data.pubKey};
+                                storedata(data).then(function (response) {
+                                }).catch(function (error) {
+                                    console.log(error.message);
+                                });
+                              }  
+                            }
                           } catch (e) {
                             //console.log(e)
                           }
@@ -156,11 +178,56 @@ function getDatafromAPI(){
     );
 }
 
+function storeSuperNodeData(data){
+  return new Promise(
+    function(resolve, reject) {
+      var idb = indexedDB.open("FLO_Tweet");
+      idb.onerror = function(event) {
+          reject("Error in opening IndexedDB!");
+      };
+      idb.onsuccess = function(event) {
+          var db = event.target.result;
+          var obs = db.transaction('superNodes', "readwrite").objectStore('superNodes');
+          if(data.addNodes)
+            for(var i=0; i<data.addNodes.length; i++)
+              obs.add(true,data.addNodes[i])
+          if(data.removeNodes)
+            for(var i=0; i<data.removeNodes.length; i++)
+              obs.delete(data.removeNodes[i])
+          db.close();
+          resolve('Updated superNodes list in IDB');
+        };
+      }
+   );
+}
+
+function getSuperNodeListfromIDB(){
+  return new Promise(
+    function(resolve,reject){
+      var idb = indexedDB.open("FLO_Tweet");
+      idb.onerror = function(event) {
+         reject("Error in opening IndexedDB!");
+      };
+      idb.onsuccess = function(event) {
+        var db = event.target.result;
+        var obs = db.transaction("superNodes", "readwrite").objectStore("superNodes");
+        var getReq = obs.getAllKeys();
+        getReq.onsuccess = function(event){
+          resolve(event.target.result);
+        }
+        getReq.onerror = function(event){
+          reject('Unable to read superNode list!')
+        }
+        db.close();
+      };
+    }
+  );
+}
 
 function getuserID(){
   return new Promise(
     function(resolve,reject){
-      privKey = sessionStorage.privKey || prompt("Enter FLO Private Key : ");
+      privKey = (sessionStorage.privKey !== undefined ? encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.privKey)):prompt("Enter FLO Private Key : "));
       var key = new Bitcoin.ECKey(privKey);
       while(key.priv == null){
         privKey = prompt("Invalid FLO Private Key! Retry : ")
@@ -211,82 +278,13 @@ function getProfilesfromIDB(){
   );
 }
 
-function readMsgfromIDB(){
-  return new Promise(
-    function(resolve,reject){
-      var disp = document.getElementById("conversation");
-      for(floID in profiles){
-        var createLi = document.createElement('div');
-        createLi.setAttribute("id", floID);
-        createLi.setAttribute("class", "message-inner");
-        createLi.style.display = 'none';
-        disp.appendChild(createLi);
-      }
-      var idb = indexedDB.open("FLO_Tweet",2);
-      idb.onerror = function(event) {
-        reject("Error in opening IndexedDB!");
-      };
-      idb.onupgradeneeded = function(event) {
-        var objectStore = event.target.result.createObjectStore("messages",{ keyPath: 'time' });
-        objectStore.createIndex('text', 'text', { unique: false });
-        objectStore.createIndex('floID', 'floID', { unique: false });
-        objectStore.createIndex('type', 'type', { unique: false });
-      };
-      idb.onsuccess = function(event) {
-        var db = event.target.result;
-        var obs = db.transaction("messages", "readwrite").objectStore("messages");
-        obs.openCursor().onsuccess = function(event) {
-          var cursor = event.target.result;
-          if(cursor) {
-            var chat = document.getElementById(cursor.value.floID);
-            if(cursor.value.type == "R"){
-              var msgdiv = document.createElement('div');
-              msgdiv.setAttribute("class", "row message-body");
-              msgdiv.innerHTML = `<div class="col-sm-12 message-main-receiver">
-                      <div class="receiver">
-                        <span class="message-text">
-                         ${cursor.value.text}
-                        </span>
-                        <span class="message-time pull-right">
-                          ${getTime(cursor.value.time)}
-                        </span>
-                      </div>
-                    </div>`;
-              chat.appendChild(msgdiv);
-            }else if(cursor.value.type == "S"){
-              var msgdiv = document.createElement('div');
-              msgdiv.setAttribute("class", "row message-body");
-              msgdiv.innerHTML = `<div class="col-sm-12 message-main-sender">
-                      <div class="sender">
-                        <span class="message-text">${cursor.value.text}
-                        </span>
-                        <span class="message-time pull-right">
-                          ${getTime(cursor.value.time)}
-                        </span>
-                      </div>
-                    </div>`;
-              chat.appendChild(msgdiv);
-            }
-
-            cursor.continue();
-          } else {
-            console.log('Entries all displayed.');
-            resolve("Read Msg from IDB");
-          }
-        };
-        db.close();
-      };
-    }
-  );
-}
-
 function initselfWebSocket(){
   selfWebsocket = new WebSocket("ws://"+location.host+"/ws");
   selfWebsocket.onopen = function(evt){ 
     console.log("Connecting");
-    var pass = sessionStorage.serverPass || prompt("Enter server password :");
+    var pass = (sessionStorage.serverPass !== undefined ? encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.serverPass)): prompt("Enter server password :"));
     selfWebsocket.send("$"+pass);
-    sessionStorage.serverPass = pass;
+    sessionStorage.serverPass = JSON.stringify(encrypt.createShamirsSecretShares(pass,5,5));
   };
   selfWebsocket.onclose = function(evt){ 
     console.log("DISCONNECTED");
@@ -296,7 +294,7 @@ function initselfWebSocket(){
     if(evt.data == "$Access Denied!"){
       var pass = prompt("Access Denied! reEnter server password :");
       selfWebsocket.send("$"+pass);
-      sessionStorage.serverPass = pass;
+      sessionStorage.serverPass = JSON.stringify(encrypt.createShamirsSecretShares(pass,5,5));
     }else if(evt.data == "$Access Granted!")
       alert("Access Granted!")
     else{
@@ -320,6 +318,29 @@ function initselfWebSocket(){
             db.close();
           };
           selfWebsocket.send(`U${data.floID}`);
+        }else if(data.fromSuperNode && following.includes(data.floID)){
+          var tid = data.tid;
+          data = JSON.parse(data.data);
+          if(encrypt.verify(data.tweet,data.sign,profiles[data.floID].pubKey)){
+            storeTweet({floID:data.floID,time:data.time,data:data.tweet},tid);
+            createTweetElement(data.floID,data.time,data.tweet);
+          }
+        }else if(modSuperNode){
+          if(data.reqNewTweets){
+            kBucketObj.determineClosestSupernode(data.floID).then(result=>{
+              if(result[0].floID == selfID)
+                SuperNode_sendTweetsFromIDB(data.floID,data.tid,data.requestor);
+            }).catch(e => {
+              console.log(e.message);
+            }); 
+          }else if(data.newSuperNodeTweet){
+            kBucketObj.determineClosestSupernode(data.floID).then(result=>{
+              if(result[0].floID == selfID)
+                storeSuperNodeTweet(data.data,data.tid);
+            }).catch(e => {
+              console.log(e.message);
+            }); 
+          }
         }
       }catch(error){
         console.log(error.message);
@@ -337,18 +358,19 @@ function postTweet(){
   tweetBox.value = "";
   var time = (new Date).getTime();
   var sign = encrypt.sign(tweet,privKey);
-  var data = JSON.stringify({floID:tweeterID,time:time,tweet:tweet,sign:sign});
+  var data = JSON.stringify({floID:selfID,time:time,tweet:tweet,sign:sign});
   console.log(data);
   selfWebsocket.send(data);
-  createTweetElement(tweeterID,time,tweet);
-  getLastTweetCount(tweeterID).then(function(result){
-    storeTweet({floID:tweeterID,time:time,data:tweet},result+1);
+  createTweetElement(selfID,time,tweet);
+  getLastTweetCount(selfID).then(function(result){
+    storeTweet({floID:selfID,time:time,data:tweet},result+1);
+    sendTweetToSuperNode(data,result+1);
   }).catch(function(error){
     console.log(error.message);
   });
 }
 
-function storeTweet(data,id){
+function storeTweet(data,tid){
   var idb = indexedDB.open("FLO_Tweet");
   idb.onerror = function(event) {
     console.log("Error in opening IndexedDB!");
@@ -356,12 +378,28 @@ function storeTweet(data,id){
   idb.onsuccess = function(event) {
     var db = event.target.result;
     var obs = db.transaction("tweets", "readwrite").objectStore("tweets");
-    data.id = `${data.time}_${data.floID}`;
+    data.tweetID = `${data.time}_${data.floID}`;
+    data.tid = tid;
     obs.add(data);
     var obsL = db.transaction("lastTweet", "readwrite").objectStore("lastTweet");
-    obsL.put(id,data.floID);
+    obsL.put(tid,data.floID);
     db.close();
   };
+}
+
+function sendTweetToSuperNode(data,tid){
+  kBucketObj.determineClosestSupernode(selfID).then(result=>{
+    var superNodeWS = new WebSocket("ws://"+profiles[result[0].floID].onionAddr+"/ws");
+    superNodeWS.onopen = function(ev){ 
+      console.log(`Connected to self SuperNode!`);
+      var data = JSON.stringify({newSuperNodeTweet:true,floID:selfID,tid:tid,data:data})
+      superNodeWS.send(data);
+    };
+    superNodeWS.onerror = function(ev) {console.log(`self SuperNode is offline!`);};
+    superNodeWS.onclose = function(ev) {console.log(`Disconnected from self SuperNode!`);};
+  }).catch(e => {
+    console.log(e.message);
+  }); 
 }
 
 function getFollowinglistFromIDB(){
@@ -402,7 +440,7 @@ function displayTweetsFromIDB(){
           var cursor = event.target.result;
           if(cursor) {
             //console.log(cursor.value)
-            if(cursor.value.floID == tweeterID || following.includes(cursor.value.floID))
+            if(cursor.value.floID == selfID || following.includes(cursor.value.floID))
               createTweetElement(cursor.value.floID,cursor.value.time,cursor.value.data);
             cursor.continue();
           }else{
@@ -453,6 +491,9 @@ function connectToAllFollowing(){
       };
       followingWebSockets[floid].onerror = function(ev) { 
         console.log(`${floid} Server is offline!`); 
+        //Ping SuperNode for any new tweets 
+        pingSuperNodeforNewTweets(floid);
+        
       };
       followingWebSockets[floid].onclose = function(ev) {
         console.log(`Disconnected from ${floid} Server!`);
@@ -494,4 +535,92 @@ function getLastTweetCount(floid){
   );
 }
 
-        
+function pingSuperNodeforNewTweets(floID){
+  kBucketObj.determineClosestSupernode(floID).then(result=>{
+    var superNodeWS = new WebSocket("ws://"+profiles[result[0].floID].onionAddr+"/ws");
+    superNodeWS.onopen = function(ev){ 
+      console.log(`Connected to ${floid}'s SuperNode!`);
+      getLastTweetCount(floID).then(function(result){
+        var data = JSON.stringify({reqNewTweets:true,floID:floID,tid:result,requestor:selfID})
+        superNodeWS.send(data);
+      }).catch(function(error){
+        console.log(error.message);
+      }); 
+    };
+    superNodeWS.onerror = function(ev) {console.log(`${floid}'s SuperNode is offline!`);};
+    superNodeWS.onclose = function(ev) {console.log(`Disconnected from ${floid}'s SuperNode!`);};
+  }).catch(e => {
+    console.log(e.message);
+  }); 
+}
+
+function storeSuperNodeTweet(data,tid){
+  var idb = indexedDB.open("FLO_Tweet",2);
+  idb.onerror = function(event) {
+    console.log("Error in opening IndexedDB!");
+  };
+  idb.onupgradeneeded = function(event){
+    var objectStore = event.target.result.createObjectStore("superNodeTweet",{ keyPath: 'tweetID' });
+    objectStore.createIndex('floID', 'floID', { unique: false });
+    objectStore.createIndex('tid', 'tid', { unique: false });
+    objectStore.createIndex('data', 'data', { unique: false });
+  }
+  idb.onsuccess = function(event) {
+    var db = event.target.result;
+    var obs = db.transaction("superNodeTweet", "readwrite").objectStore("superNodeTweet");
+    var parsedData = JSON.parse(data);
+    var tweetID = ''+parsedData.floID+'_'+parsedData.time; 
+    obs.add({tweetID:tweetID,floID:parsedData.floID,tid:tid,data:data});
+    db.close();
+  };
+}
+
+function SuperNode_sendTweetsFromIDB(floID,tid,requestor){
+  return new Promise(
+    function(resolve,reject){
+      var requestorWS = new WebSocket("ws://"+profiles[requestor].onionAddr+"/ws");
+
+      requestorWS.onopen = function(ev){ 
+        console.log(`sending ${floID} tweets to ${requestor} Server!`);
+        var idb = indexedDB.open("FLO_Tweet",2);
+        idb.onerror = function(event) {
+          reject("Error in opening IndexedDB!");
+        };
+        idb.onupgradeneeded = function(event){
+          var objectStore = event.target.result.createObjectStore("superNodeTweet",{ keyPath: 'tweetID' });
+          objectStore.createIndex('floID', 'floID', { unique: false });
+          objectStore.createIndex('tid', 'tid', { unique: false });
+          objectStore.createIndex('data', 'data', { unique: false });
+        }
+        idb.onsuccess = function(event) {
+          var db = event.target.result;
+          var obs = db.transaction("superNodeTweet", "readwrite").objectStore("superNodeTweet");
+          var curReq = obs.openCursor();
+          curReq.onsuccess = function(event) {
+            var cursor = event.target.result;
+            if(cursor) {
+              if(cursor.value.floID == floID && cursor.value.tid > tid){
+                data = JSON.stringify({fromSuperNode:true, floID:cursor.value.floID,tid:cursor.value.tid,data:cursor.value.data})
+                requestorWS.send(data);
+              }
+              cursor.continue();
+            }else{
+              resolve("Displayed Tweets from IDB!");
+            }
+          }
+          curReq.onerror = function(event){
+            reject("Error in Reading tweets from IDB!");
+          }
+          db.close();
+        };
+      };
+      requestorWS.onerror = function(ev) { 
+        console.log(`${requestor} Server is offline!`); 
+      };
+      requestorWS.onclose = function(ev) {
+        console.log(`Disconnected from ${requestor} Server!`);
+      };
+    }
+  );
+}        
+

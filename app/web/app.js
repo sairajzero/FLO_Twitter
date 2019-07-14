@@ -199,7 +199,34 @@ var encrypt = {
                     privateKeyDecimal: privateKeyDecimal,
                     privateKeyHex: privateKeyHex
                 }
-            }
+        },
+        createShamirsSecretShares: function (str, total_shares, threshold_limit) {
+                if (str.length > 0) {
+                    // convert the text into a hex string
+                    var strHex = shamirSecretShare.str2hex(str);
+                    // split into total_shares shares, with a threshold of threshold_limit
+                    var shares = shamirSecretShare.share(strHex, total_shares, threshold_limit);
+                    return shares;
+                }
+                return false;
+        },
+        verifyShamirsSecret: function (sharesArray, str) {
+                // combine sharesArray:
+                var comb = shamirSecretShare.combine(sharesArray);
+                //convert back to UTF string:
+                comb = shamirSecretShare.hex2str(comb);
+                return comb === str;
+        },
+        retrieveShamirSecret: function (sharesArray) {
+                if (sharesArray.length > 0) {
+                    // combine sharesArray:
+                    var comb = shamirSecretShare.combine(sharesArray.slice(0, sharesArray.length));
+                    //convert back to UTF string:
+                    comb = shamirSecretShare.hex2str(comb);
+                    return comb;
+                }
+                return false;
+        }
       }
 
 function convertStringToInt(string){

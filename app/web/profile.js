@@ -1,7 +1,7 @@
 
 var profileWebsocket, selfWebsocket;
 var profiles;
-var floID, privKey, selfID, serverPass;
+var floID, privKey, selfID;
 
 function viewProfile(){
   if( sessionStorage.profiles === undefined || sessionStorage.privKey === undefined || sessionStorage.selfID === undefined || sessionStorage.serverPass === undefined){
@@ -11,9 +11,8 @@ function viewProfile(){
   }
   profiles = JSON.parse(sessionStorage.profiles);
   console.log(profiles);
-  privKey = sessionStorage.privKey;
+  privKey = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.privKey));
   selfID = sessionStorage.selfID;
-  serverPass = sessionStorage.serverPass;
   var url = new URL(window.location.href);
   floID = url.searchParams.get("floID");
   listProfiles();
@@ -76,7 +75,7 @@ function displayTweetFromIDB(floID){
         obs.openCursor().onsuccess = function(event) {
           var cursor = event.target.result;
           if(cursor) {
-            console.log(cursor.value)
+            //console.log(cursor.value)
             if(cursor.value.floID == floID)
               createTweetElement(floID,cursor.value.time,cursor.value.data);
             cursor.continue();
@@ -196,8 +195,8 @@ function initselfWebSocket(){
   selfWebsocket = new WebSocket("ws://"+location.host+"/ws");
   selfWebsocket.onopen = function(evt){ 
     console.log("Connecting");
-    var pass = sessionStorage.serverPass;
-    selfWebsocket.send("$"+pass);
+    var serverPass = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.serverPass));
+    selfWebsocket.send("$"+serverPass);
   };
   selfWebsocket.onclose = function(evt){ 
     console.log("DISCONNECTED");
