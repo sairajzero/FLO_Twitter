@@ -392,7 +392,8 @@ function sendTweetToSuperNode(data,tid){
     var superNodeWS = new WebSocket("ws://"+profiles[result[0].floID].onionAddr+"/ws");
     superNodeWS.onopen = function(ev){ 
       console.log(`Connected to self SuperNode!`);
-      var data = JSON.stringify({newSuperNodeTweet:true,floID:selfID,tid:tid,data:data})
+      data = JSON.stringify({newSuperNodeTweet:true,floID:selfID,tid:tid,data:data})
+      console.log(data)
       superNodeWS.send(data);
     };
     superNodeWS.onerror = function(ev) {console.log(`self SuperNode is offline!`);};
@@ -539,7 +540,7 @@ function pingSuperNodeforNewTweets(floID){
   kBucketObj.determineClosestSupernode(floID).then(result=>{
     var superNodeWS = new WebSocket("ws://"+profiles[result[0].floID].onionAddr+"/ws");
     superNodeWS.onopen = function(ev){ 
-      console.log(`Connected to ${floid}'s SuperNode!`);
+      console.log(`Connected to ${floID}'s SuperNode!`);
       getLastTweetCount(floID).then(function(result){
         var data = JSON.stringify({reqNewTweets:true,floID:floID,tid:result,requestor:selfID})
         superNodeWS.send(data);
