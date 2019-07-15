@@ -37,6 +37,8 @@ function userDataStartUp(){
               listProfiles();
               getFollowinglistFromIDB().then(function(result){
                 following = result;
+                if(!following.includes(selfID))
+                  following.push(selfID);
                 console.log(following);
                 displayTweetsFromIDB().then(function(result){
                   connectToAllFollowing();
@@ -361,9 +363,7 @@ function postTweet(){
   var data = JSON.stringify({floID:selfID,time:time,tweet:tweet,sign:sign});
   console.log(data);
   selfWebsocket.send(data);
-  createTweetElement(selfID,time,tweet);
   getLastTweetCount(selfID).then(function(result){
-    storeTweet({floID:selfID,time:time,data:tweet},result+1);
     sendTweetToSuperNode(data,result+1);
   }).catch(function(error){
     console.log(error.message);
@@ -477,8 +477,8 @@ function createTweetElement(floID,time,tweet){
 
 function connectToAllFollowing(){
   console.log("Connecting to All following servers...")
-  for(i=0;i<following.length;i++){
-    var floid = following[i];
+  following.forEach(floid => {
+    console.log(floid)
     followingWebSockets[floid] = new WebSocket("ws://"+profiles[floid].onionAddr+"/ws");
 
       followingWebSockets[floid].onopen = function(ev){ 
@@ -512,7 +512,7 @@ function connectToAllFollowing(){
           console.log(error.message);
         }
       };
-  }
+  });
 }
 
 function getLastTweetCount(floid){
