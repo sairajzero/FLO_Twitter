@@ -142,7 +142,7 @@ function getDatafromAPI(){
                         response.items.reverse().forEach(function(tx){
                           try {
                             if (tx.vin[0].addr == addr){
-                              var data = JSON.parse(tx.floData).FLO_chat_SuperNode;
+                              var data = JSON.parse(tx.floData).FLO_Tweet_SuperNode;
                               if(data !== undefined){
                                 storeSuperNodeData(data).then(function (response) {
                                 }).catch(function (error) {
