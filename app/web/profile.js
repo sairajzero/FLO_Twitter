@@ -242,7 +242,7 @@ function initselfWebSocket(){
             db.close();
           };
           selfWebsocket.send(`U${data.floID}`);
-        }else if(data.fromSuperNode && following.includes(data.floID)){
+        }else if(data.fromSuperNode && data.floID == profileID){
           var tid = data.tid;
           data = JSON.parse(data.data);
           if(encrypt.verify(data.tweet,data.sign,profiles[data.floID].pubKey)){
