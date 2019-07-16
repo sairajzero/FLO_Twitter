@@ -156,7 +156,7 @@ function storeTweet(data,id){
   idb.onsuccess = function(event) {
     var db = event.target.result;
     var obs = db.transaction("tweets", "readwrite").objectStore("tweets");
-    data.id = `${data.time}_${data.floID}`;
+    data.tweetID = `${data.time}_${data.floID}`;
     obs.add(data);
     var obsL = db.transaction("lastTweet", "readwrite").objectStore("lastTweet");
     obsL.put(id,data.floID);
