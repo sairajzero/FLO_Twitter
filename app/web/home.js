@@ -668,7 +668,7 @@ function SuperNode_sendTweetsFromIDB(floID,tid,requestor){
 }        
 
 function SuperNode_sendviaMsgFromIDB(floID){
-  var receiverWS = new WebSocket("ws://"+contacts[floID].onionAddr+"/ws");
+  var receiverWS = new WebSocket("ws://"+profiles[floID].onionAddr+"/ws");
   receiverWS.onopen = function(ev){ 
     var idb = indexedDB.open("FLO_Chat",2);
     idb.onerror = function(event) {
