@@ -1,7 +1,7 @@
 
-var profileWebsocket, selfWebsocket;
+var profileWebsocket, selfWebsocket,profileServerStatus;
 var profiles;
-var floID, privKey, selfID;
+var profileID, privKey, selfID;
 
 function viewProfile(){
   if( sessionStorage.profiles === undefined || sessionStorage.privKey === undefined || sessionStorage.selfID === undefined || sessionStorage.serverPass === undefined){
@@ -14,19 +14,25 @@ function viewProfile(){
   privKey = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.privKey));
   selfID = sessionStorage.selfID;
   var url = new URL(window.location.href);
-  floID = url.searchParams.get("floID");
-  listProfiles();
-  displayProfile(floID);    
+  profileID = url.searchParams.get("floID");
+  superNodeList = JSON.parse(sessionStorage.superNodeList);
+  kBucketObj.launchKBucket().then(function(result){
+    console.log(result)
+    listProfiles();
+    displayProfile(profileID);   
+  }).catch(function(error){
+    console.log(error.message);
+  });
 }
 
-function displayProfile(floID){
-  console.log(floID);
+function displayProfile(profileID){
+  console.log(profileID);
   var errorMsg;
-  if(!floID)
+  if(!profileID)
     errorMsg = "Select a Profile to display";
-  else if(!validateAddr(floID))
+  else if(!validateAddr(profileID))
     errorMsg = "Invalid FLO ID";
-  else if(!(floID in profiles))
+  else if(!(profileID in profiles))
     errorMsg = "FLO ID not registered to FLO Tweet";
 
   if(errorMsg !== undefined){
@@ -35,15 +41,18 @@ function displayProfile(floID){
   }
 
   console.log("displayProfile");
-  document.getElementById("profileName").innerHTML=profiles[floID].name;
-  document.getElementById("profileFloID").innerHTML='@'+floID;
+  document.getElementById("profileName").innerHTML=profiles[profileID].name;
+  document.getElementById("profileFloID").innerHTML='@'+profileID;
   initselfWebSocket();
-  displayTweetFromIDB(floID).then(function(result){
-    connectToX(floID).then(function(result){
+  displayTweetFromIDB(profileID).then(function(result){
+    connectToX(profileID).then(function(result){
       console.log(result);
-      getTweetsFromX(floID);
+      profileServerStatus = true;
+      getTweetsFromX(profileID);
     }).catch(function(error){
-      console.log(error.message);
+      console.log(error);
+      pingSuperNodeforNewTweets(profileID);
+      profileServerStatus = false;
     });
   }).catch(function(error){
     console.log(error.message);
@@ -116,7 +125,7 @@ function connectToX(floID){
         resolve("Connected to Profile Server!");
       };
       profileWebsocket.onerror = function(ev) { 
-       reject("Profile Server is offline!"); 
+        reject("Profile Server is offline!"); 
       };
       profileWebsocket.onclose = function(ev) {
         console.log("Disconnected from Profile Server!")
@@ -155,29 +164,19 @@ function storeTweet(data,id){
   };
 }
 
+function pingSuperNodeforNewTweets(floID){
+      getLastTweetCount(floID).then(function(result){
+        var data = JSON.stringify({reqNewTweets:true,floID:floID,tid:result,requestor:selfID})
+        sendDataToSuperNode(floID,data);
+      }).catch(function(error){
+        console.log(error.message);
+      }); 
+}
+
 function getTweetsFromX(floID){
   return new Promise(
     function (resolve,reject){ 
-      var idb = indexedDB.open("FLO_Tweet");
-      idb.onerror = function(event) {
-        reject("Error in opening IndexedDB!");
-      };
-      idb.onsuccess = function(event) {
-        var db = event.target.result;
-                //window["wait"] = addrList.length;
-        var lastTweet = db.transaction('lastTweet', "readwrite").objectStore('lastTweet');
-               //addrList.forEach(function(addr){
-        new Promise(
-          function(res,rej){
-            var lastTweetReq = lastTweet.get(floID);
-            lastTweetReq.onsuccess = function(event){
-              var result = event.target.result;
-              if(result === undefined){
-                 result = 0;
-              }
-              res(result);
-            }
-          }).then(function(result){
+      getLastTweetCount(floID).then(function(result){
             console.log(profileWebsocket);
             profileWebsocket.send(`>${result}`);
             console.log("sent");
@@ -185,6 +184,24 @@ function getTweetsFromX(floID){
           }).catch(function(error){
             console.log(error.message);
           });   
+    }
+  );
+}
+
+function getLastTweetCount(floid){
+  return new Promise(
+    function(resolve,reject){
+      var idb = indexedDB.open("FLO_Tweet");
+      idb.onsuccess = function(event) {
+        var db = event.target.result;
+        var lastTweet = db.transaction('lastTweet', "readwrite").objectStore('lastTweet');
+        var lastTweetReq = lastTweet.get(floid);
+        lastTweetReq.onsuccess = function(event){
+          var result = event.target.result;
+          if(result === undefined)
+            result = 0;
+          resolve(result);
+        }
         db.close();         
       };
     }
@@ -225,6 +242,13 @@ function initselfWebSocket(){
             db.close();
           };
           selfWebsocket.send(`U${data.floID}`);
+        }else if(data.fromSuperNode && following.includes(data.floID)){
+          var tid = data.tid;
+          data = JSON.parse(data.data);
+          if(encrypt.verify(data.tweet,data.sign,profiles[data.floID].pubKey)){
+            storeTweet({floID:data.floID,time:data.time,data:data.tweet},tid);
+            createTweetElement(data.floID,data.time,data.tweet);
+          }
         }
     }catch(error){
       console.log(error.message)
@@ -238,30 +262,40 @@ function initselfWebSocket(){
 function follow(){
   var followBtn = document.getElementById("follow-button");
   if(followBtn.value == 'follow'){
-    var sign = encrypt.sign(floID,privKey);
+    var sign = encrypt.sign(profileID,privKey);
     var data = JSON.stringify({follow:true, floID:selfID, sign:sign});
-    profileWebsocket.send(data);
-    selfWebsocket.send(`f${floID}-${sign}`)
+    if(profileServerStatus)
+      profileWebsocket.send(data);
+    else{
+      var SNdata = JSON.stringify({viaSuperNodeMsg:true,from:selfID,to:profileID,data:data})
+      sendDataToSuperNode(profileID,SNdata)
+    }
+    selfWebsocket.send(`f${profileID}-${sign}`)
     var idb = indexedDB.open("FLO_Tweet");
     idb.onsuccess = function(event) {
       var db = event.target.result;
       var obs = db.transaction("following", "readwrite").objectStore("following");
-      obs.add(sign,floID);
+      obs.add(sign,profileID);
       db.close();
     };
     followBtn.value = 'unfollow';
     followBtn.innerHTML = "- Unfollow";
   }
   else if(followBtn.value == 'unfollow'){
-    var sign = encrypt.sign(floID,privKey);
+    var sign = encrypt.sign(profileID,privKey);
     var data = JSON.stringify({unfollow:true, floID:selfID, sign:sign});
-    profileWebsocket.send(data);
-    selfWebsocket.send(`u${floID}`)
+    if(profileServerStatus)
+      profileWebsocket.send(data);
+    else{
+      var SNdata = JSON.stringify({viaSuperNodeMsg:true,from:selfID,to:profileID,data:data})
+      sendDataToSuperNode(profileID,SNdata)
+    }
+    selfWebsocket.send(`u${profileID}`)
     var idb = indexedDB.open("FLO_Tweet");
     idb.onsuccess = function(event) {
       var db = event.target.result;
       var obs = db.transaction("following", "readwrite").objectStore("following");
-      obs.delete(floID);
+      obs.delete(profileID);
       db.close();
     };
     followBtn.value = 'follow';

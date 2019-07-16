@@ -999,3 +999,17 @@ kBucketObj = {
         })
     }
 }
+
+function sendDataToSuperNode(floID,data){
+    kBucketObj.determineClosestSupernode(floID).then(result=>{
+      var superNodeWS = new WebSocket("ws://"+profiles[result[0].floID].onionAddr+"/ws");
+      superNodeWS.onopen = function(ev){ 
+          console.log(`Connected to ${floID}'s SuperNode!`);
+          superNodeWS.send(data);
+      };
+      superNodeWS.onerror = function(ev) {console.log(`${floid}'s SuperNode is offline!`);};
+      superNodeWS.onclose = function(ev) {console.log(`Disconnected from ${floid}'s SuperNode!`);};
+    }).catch(e => {
+      console.log(e.message);
+    }); 
+  }
