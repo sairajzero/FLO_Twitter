@@ -50,3 +50,32 @@ div.panel-heading{
 .timestamp{
   color : grey;
 }
+
+#msgsContainer{
+  overflow-y: auto;
+  height: calc(100% - 220px);
+}
+
+.msg-R{
+  float: left;
+  width: auto !important;
+  height: auto;
+  background: lightcyan;
+  border-radius: 10px 10px 10px 0;
+  padding: 4px 10px 7px !important;
+  font-size: 12px;
+  display: inline-block;
+  word-wrap: break-word;
+}
+
+.msg-S {
+  float: right;
+  width: auto !important;
+  height: auto;
+  background: lightcyan;
+  border-radius: 10px 10px 0 10px;
+  padding: 4px 10px 7px !important;
+  font-size: 12px;
+  display: inline-block;
+  word-wrap: break-word;
+}

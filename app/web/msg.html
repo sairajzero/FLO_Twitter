@@ -1,0 +1,123 @@
+<html lang="en">
+
+<head>
+  <title>FLO Twitter</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Font Awesome File -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <script type="text/javascript" src="registerID.js"></script>
+  <script type="text/javascript" src="app.js"></script>
+  <script type="text/javascript" src="msg.js"></script>
+
+</head>
+
+<body onload = "initMsgs();">
+
+  <div class="navbar navbar-default navbar-static-top">
+    <div class="container">
+      <div class="navbar-collapse navbar-collapse-1 collapse" aria-expanded="true">
+        <ul class="nav navbar-nav">
+          <li>
+            <a href="home.html"><span class="glyphicon glyphicon-home"></span> Home</a>
+          </li>
+          <li>
+            <a href="profile.html"><span class="glyphicon glyphicon-user"></span> Profiles</a>
+          </li>
+          <li class="active">
+            <a href="msg.html"><span class="glyphicon glyphicon-envelope"></span> Messages</a>
+          </li>
+        </ul>
+  
+        <div class="navbar-form navbar-right">
+          <div class="form-group has-feedback">
+            <input type="text" class="form-control-nav" id="search" aria-describedby="search1">
+            <span class="glyphicon glyphicon-search form-control-feedback" aria-hidden="true"></span>
+          </div>
+  
+          <button class="btn btn-default btn-sm" onclick="logout()">
+            <span class="glyphicon glyphicon-log-out"> </span> Log out
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-3">
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <h5>
+              <div id="profileName"></div>
+              <small id="profileFloID"></small>
+            </h5>
+            <div class="row">
+                <div class="col-xs-3">
+                  <h5>
+                    <small>TWEETS</small>
+                    <a href="#" id="tweetCount">-</a>
+                  </h5>
+                </div>
+                <div class="col-xs-4">
+                  <h5>
+                    <small>FOLLOWING</small>
+                    <a href="#" id="followingCount">-</a>
+                  </h5>
+                </div>
+                <div class="col-xs-4">
+                  <h5>
+                    <small>FOLLOWERS</small>
+                    <a href="#" id="followersCount">-</a>
+                  </h5>
+                </div>
+              </div>
+          </div>
+        </div>
+  
+        <div class="panel panel-default panel-custom">
+        </div>
+  
+      </div>
+      <div class="col-sm-6">
+  
+        <div class="panel panel-info">
+          <div class="panel-heading">
+            <div class="media">
+              <div class="media-heading">
+                <span id="recipient_floID">Select Contact<br/><small>@floID</small></span>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body" id="msgsContainer">
+          </div>
+          <div class="panel-body">
+            <input class="form-control" rows="1" id="sendMsgInput" placeholder="Type message" autocomplete="off" ></input>
+          </div>
+        </div>
+  
+      </div>
+  
+      <div class="col-sm-3">
+  
+          <div class="panel panel-default panel-custom">
+            <div class="panel-footer">
+              <h3 class="panel-title">
+                Profiles
+              </h3>
+            </div>
+            <div class="panel-body" id="profileList">
+            </div>
+          </div>
+  
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

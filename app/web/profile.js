@@ -98,6 +98,22 @@ function displayTweetFromIDB(floID){
   );
 }
 
+function listProfiles(){
+  console.log("listProfiles");
+  var profileList =  document.getElementById("profileList");
+  profileList.innerHTML = "";
+  for (p in profiles){
+    var element =  document.createElement("div");
+    element.setAttribute("class", "media");
+    element.innerHTML = `<a href="profile.html?floID=${p}"><div class="media-body">
+              <h5 class="media-heading">${profiles[p].name}</h5>
+              <small>@${p}</small>
+            </div></a>`
+    profileList.appendChild(element);
+  }
+  //document.getElementById("profileInfo").style.display = "none";
+}
+
 function createTweetElement(floID,time,tweet){
   var tweetDisplay = document.getElementById("profileBody");
   var element =  document.createElement("div");
@@ -105,7 +121,7 @@ function createTweetElement(floID,time,tweet){
   element.innerHTML = `
             <div class="media-body">
               <h4 class="media-heading">${profiles[floID].name} <small>@${floID}</small></h4>
-              <p>${tweet}</p>
+              <span>${tweet}</span>
               <ul class="nav nav-pills nav-pills-custom">             
                 <li><a href="#"><span class="glyphicon glyphicon-share-alt"></span></a></li>
                 <li><a href="#"><span class="glyphicon glyphicon-retweet"></span></a></li>
@@ -160,6 +176,20 @@ function storeTweet(data,id){
     obs.add(data);
     var obsL = db.transaction("lastTweet", "readwrite").objectStore("lastTweet");
     obsL.put(id,data.floID);
+    db.close();
+  };
+}
+
+function storeMsg(data){
+  var idb = indexedDB.open("FLO_Tweet");
+  idb.onerror = function(event) {
+    console.log("Error in opening IndexedDB!");
+  };
+  idb.onsuccess = function(event) {
+    var db = event.target.result;
+    var obs = db.transaction("messages", "readwrite").objectStore("messages");
+    data.msgID = `${data.time}_${data.floID}`;
+    obs.add(data);
     db.close();
   };
 }
@@ -242,6 +272,10 @@ function initselfWebSocket(){
             db.close();
           };
           selfWebsocket.send(`U${data.floID}`);
+        }else if(data.message && data.to == selfID){
+          var msg = encrypt.decryptMessage(data.secret,data.pubVal)
+          if(encrypt.verify(msg,data.sign,profiles[data.from].pubKey))
+            storeMsg({time:data.time,floID:data.from,text:msg,type:'R'});
         }else if(data.fromSuperNode && data.floID == profileID){
           var tid = data.tid;
           data = JSON.parse(data.data);

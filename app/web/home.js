@@ -116,6 +116,11 @@ function getDatafromAPI(){
               var objectStore4 = db.createObjectStore("lastTweet");
               var objectStore5 = db.createObjectStore("followers");
               var objectStore6 = db.createObjectStore("following");
+              var objectStore7 = event.target.result.createObjectStore("messages",{ keyPath: 'msgID' });
+                objectStore7.createIndex('time', 'time', { unique: false });
+                objectStore7.createIndex('text', 'text', { unique: false });
+                objectStore7.createIndex('floID', 'floID', { unique: false });
+                objectStore7.createIndex('type', 'type', { unique: false });
             };
             idb.onsuccess = function(event) {
                var db = event.target.result;
@@ -322,6 +327,10 @@ function initselfWebSocket(){
             db.close();
           };
           selfWebsocket.send(`U${data.floID}`);
+        }else if(data.message && data.to == selfID){
+          var msg = encrypt.decryptMessage(data.secret,data.pubVal)
+          if(encrypt.verify(msg,data.sign,profiles[data.from].pubKey))
+            storeMsg({time:data.time,floID:data.from,text:msg,type:'R'});
         }else if(data.fromSuperNode && following.includes(data.floID)){
           var tid = data.tid;
           data = JSON.parse(data.data);
@@ -370,6 +379,24 @@ function initselfWebSocket(){
   };
 }
 
+function listProfiles(){
+  console.log("listProfiles");
+  document.getElementById("profileName").innerHTML=profiles[selfID].name;
+  document.getElementById("profileFloID").innerHTML='@'+selfID;
+  var profileList =  document.getElementById("profileList");
+  profileList.innerHTML = "";
+  for (p in profiles){
+    var element =  document.createElement("div");
+    element.setAttribute("class", "media");
+    element.innerHTML = `<a href="profile.html?floID=${p}"><div class="media-body">
+              <h5 class="media-heading">${profiles[p].name}</h5>
+              <small>@${p}</small>
+            </div></a>`
+    profileList.appendChild(element);
+  }
+  //document.getElementById("profileInfo").style.display = "none";
+}
+
 function postTweet(){
   var tweetBox = document.getElementById("tweetBox");
   var tweet = tweetBox.value;
@@ -399,6 +426,20 @@ function storeTweet(data,tid){
     obs.add(data);
     var obsL = db.transaction("lastTweet", "readwrite").objectStore("lastTweet");
     obsL.put(tid,data.floID);
+    db.close();
+  };
+}
+
+function storeMsg(data){
+  var idb = indexedDB.open("FLO_Tweet");
+  idb.onerror = function(event) {
+    console.log("Error in opening IndexedDB!");
+  };
+  idb.onsuccess = function(event) {
+    var db = event.target.result;
+    var obs = db.transaction("messages", "readwrite").objectStore("messages");
+    data.msgID = `${data.time}_${data.floID}`;
+    obs.add(data);
     db.close();
   };
 }
@@ -480,7 +521,7 @@ function createTweetElement(floID,time,tweet){
   element.innerHTML = `
             <div class="media-body">
               <h4 class="media-heading">${profiles[floID].name} <small>@${floID}</small></h4>
-              <p>${tweet}</p>
+              <p>${tweet.replace(/\n/g, "<br/>")}</p>
               <ul class="nav nav-pills nav-pills-custom">             
                 <li><a href="#"><span class="glyphicon glyphicon-share-alt"></span></a></li>
                 <li><a href="#"><span class="glyphicon glyphicon-retweet"></span></a></li>

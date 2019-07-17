@@ -111,7 +111,7 @@ var encrypt = {
                 var senderPublicKeyString = {};
                 senderDerivedKey = this.deriveSharedKeySender(
                     receiverCompressedPublicKey, senderECKeyData.privateKey);
-                console.log("senderDerivedKey", senderDerivedKey);
+                //console.log("senderDerivedKey", senderDerivedKey);
                 let senderKey = senderDerivedKey.XValue + senderDerivedKey.YValue;
                 let secret = Crypto.AES.encrypt(data, senderKey);
                 return {
@@ -136,7 +136,7 @@ var encrypt = {
 
                 receiverDerivedKey = this.deriveReceiverSharedKey(senderPublicKeyString,
                     receiverECKeyData.privateKey);
-                console.log("receiverDerivedKey", receiverDerivedKey);
+                //console.log("receiverDerivedKey", receiverDerivedKey);
 
                 let receiverKey = receiverDerivedKey.XValue + receiverDerivedKey.YValue;
                 let decryptMsg = Crypto.AES.decrypt(secret, receiverKey);
@@ -256,22 +256,6 @@ function getTime(time){
 function logout(){
   sessionStorage.clear();
   location.reload();
-}
-
-function listProfiles(){
-  console.log("listProfiles");
-  var profileList =  document.getElementById("profileList");
-  profileList.innerHTML = "";
-  for (p in profiles){
-    var element =  document.createElement("div");
-    element.setAttribute("class", "media");
-    element.innerHTML = `<a href="profile.html?floID=${p}"><div class="media-body">
-              <h5 class="media-heading">${profiles[p].name}</h5>
-              <small>@${p}</small>
-            </div></a>`
-    profileList.appendChild(element);
-  }
-  //document.getElementById("profileInfo").style.display = "none";
 }
 
 var supernodeKBucket;
