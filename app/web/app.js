@@ -6,7 +6,8 @@ window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.ms
 if (!window.indexedDB) {
      window.alert("Your browser doesn't support a stable version of IndexedDB.")
 }
-
+var supernodeKBucket;
+var superNodeList;
 var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 var encrypt = {
@@ -14,7 +15,7 @@ var encrypt = {
             p: BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F", 16),
 
             exponent1: function () {
-                return encrypt.p.add(BigInteger.ONE).divide(BigInteger("4"))
+                return this.p.add(BigInteger.ONE).divide(BigInteger("4"))
             },
 
             calculateY: function (x) {
@@ -159,6 +160,34 @@ var encrypt = {
           var floID = key.getBitcoinAddress();
           return floID;
         },
+        validateAddr: function (value) {
+            try{
+                var addr = new Bitcoin.Address(value);
+                if (addr == value)
+                    return true;
+                else
+                    return false;
+            }catch(error){
+                return false;
+            }
+        },
+        verifyWIF: function (wif,addr){
+            try {
+                var key = new Bitcoin.ECKey(wif);
+                if(key.priv == null){
+                    return false;
+                }
+                key.setCompressed(true);
+                var bitcoinAddress = key.getBitcoinAddress();
+                if (addr == bitcoinAddress)
+                    return true;
+                else
+                    return false;
+            }
+            catch (error) {
+                console.log(error);
+            }
+        },
         sign: function (msg, privateKeyHex) {
             var key = new Bitcoin.ECKey(privateKeyHex);
             key.setCompressed(true);
@@ -255,11 +284,9 @@ function getTime(time){
 
 function logout(){
   sessionStorage.clear();
-  location.reload();
+  window.location.href = "index.html";
 }
 
-var supernodeKBucket;
-var superNodeList;
 /*Kademlia DHT K-bucket implementation as a binary tree.*/
 
   if (typeof reactor == "undefined" || !reactor) {
@@ -317,25 +344,6 @@ reactor.addEventListener('bucket_full', function (someObject) {
     console.log('Bucket full ' + someObject);
 });
 
-/*
-//Sample Usage
-//Creating and defining the event
-reactor.registerEvent('big bang');
-reactor.addEventListener('big bang', function(someObject){
-console.log('This is big bang listener yo!'+ someObject.a);
-});
-
-//Firing the event
-reactor.dispatchEvent('big bang');
-reactor.dispatchEvent('big bang',{a:1});
-reactor.dispatchEvent('big bang',{a:55});
-
-*/
-
-
-//Checking if existing NodeID can be used
-//This first block of if will initialize the configuration of KBucket
-//Add Events, Messaging between different K-Buckets, and attach relevant distributed data
 
     /**
     * @param  {Uint8Array} array1
@@ -984,6 +992,35 @@ kBucketObj = {
     }
 }
 
+/* Common IDB functions */
+function storeTweet(data,tid){
+  var idb = indexedDB.open("FLO_Tweet");
+  idb.onerror = (event) => { console.log("Error in opening IndexedDB!") };
+  idb.onsuccess = (event) => {
+    var db = event.target.result;
+    var obs = db.transaction("tweets", "readwrite").objectStore("tweets");
+    data.tweetID = `${data.time}_${data.floID}`;
+    data.tid = tid;
+    obs.add(data);
+    var obsL = db.transaction("lastTweet", "readwrite").objectStore("lastTweet");
+    obsL.put(tid,data.floID);
+    db.close();
+  };
+}
+
+function storeMsg(data){
+  var idb = indexedDB.open("FLO_Tweet");
+  idb.onerror = (event) => { console.log("Error in opening IndexedDB!") };
+  idb.onsuccess = (event) => {
+    var db = event.target.result;
+    var obs = db.transaction("messages", "readwrite").objectStore("messages");
+    data.msgID = `${data.time}_${data.floID}`;
+    obs.add(data);
+    db.close();
+  };
+}
+
+/* SuperNode functions */
 function sendDataToSuperNode(floID,data){
     kBucketObj.determineClosestSupernode(floID).then(result=>{
       var superNodeWS = new WebSocket("ws://"+profiles[result[0].floID].onionAddr+"/ws");
@@ -996,4 +1033,159 @@ function sendDataToSuperNode(floID,data){
     }).catch(e => {
       console.log(e.message);
     }); 
+}
+
+function superNodeMode(data){
+    if(data.reqNewTweets){
+        kBucketObj.determineClosestSupernode(data.floID).then(result => {
+          if(result[0].floID == selfID)
+            SuperNode_sendTweetsFromIDB(data.floID,data.tid,data.requestor);
+        }).catch(error => {
+          console.log(error);
+        }); 
+    }else if(data.newSuperNodeTweet){
+        kBucketObj.determineClosestSupernode(data.floID).then(result => {
+          if(result[0].floID == selfID)
+          SuperNode_storeSuperNodeTweet(data.data,data.tid);
+        }).catch(error => {
+          console.log(error);
+        }); 
+    }else if(data.viaSuperNodeMsg){
+        kBucketObj.determineClosestSupernode(data.to).then(result => {
+          if(result[0].floID == selfID)
+            SuperNode_storeViaSuperNodeMsg(data.from,data.to,data.data);
+        }).catch(error => {
+          console.log(error);
+        }); 
+    }else if(data.viaMsgreq){
+        kBucketObj.determineClosestSupernode(data.floID).then(result => {
+          if(result[0].floID == selfID)
+          SuperNode_sendviaMsgFromIDB(data.floID);
+        }).catch(error => {
+          console.log(error);
+        }); 
+    }
+}
+
+function SuperNode_sendTweetsFromIDB(floID,tid,requestor){
+  return new Promise((resolve,reject) => {
+      var requestorWS = new WebSocket("ws://"+profiles[requestor].onionAddr+"/ws");
+      requestorWS.onopen = (event) => { 
+        console.log(`sending ${floID} tweets to ${requestor} Server!`);
+        var idb = indexedDB.open("FLO_Tweet",2);
+        idb.onerror = (event) => { reject("Error in opening IndexedDB!") };
+        idb.onupgradeneeded = (event) => {
+          var objectStore1 = event.target.result.createObjectStore("superNodeTweet",{ keyPath: 'tweetID' });
+          objectStore1.createIndex('floID', 'floID', { unique: false });
+          objectStore1.createIndex('tid', 'tid', { unique: false });
+          objectStore1.createIndex('data', 'data', { unique: false });
+          var objectStore2 = event.target.result.createObjectStore("viaSuperNodeMsg",{ keyPath: 'id',autoIncrement:true });
+          objectStore2.createIndex('from', 'from', { unique: false });
+          objectStore2.createIndex('to', 'to', { unique: false });
+          objectStore2.createIndex('data', 'data', { unique: false });
+        }
+        idb.onsuccess = (event) => {
+          var db = event.target.result;
+          var obs = db.transaction("superNodeTweet", "readwrite").objectStore("superNodeTweet");
+          var curReq = obs.openCursor();
+          curReq.onsuccess = (event) => {
+            var cursor = event.target.result;
+            if(cursor) {
+              if(cursor.value.floID == floID && cursor.value.tid > tid){
+                data = JSON.stringify({fromSuperNode:true, floID:cursor.value.floID,tid:cursor.value.tid,data:cursor.value.data})
+                requestorWS.send(data);
+              }
+              cursor.continue();
+            }else{
+              resolve("Displayed Tweets from IDB!");
+            }
+          }
+          curReq.onerror = (event) => { reject("Error in Reading tweets from IDB!") }
+          db.close();
+        };
+      };
+      requestorWS.onerror = (event) => { console.log(`${requestor} Server is offline!`) };
+      requestorWS.onclose = (event) => { console.log(`Disconnected from ${requestor} Server!`) };
+  });
+}        
+
+function SuperNode_storeSuperNodeTweet(data,tid){
+  var idb = indexedDB.open("FLO_Tweet",2);
+  idb.onerror = (event) => { console.log("Error in opening IndexedDB!") };
+  idb.onupgradeneeded = (event) => {
+    var objectStore1 = event.target.result.createObjectStore("superNodeTweet",{ keyPath: 'tweetID' });
+    objectStore1.createIndex('floID', 'floID', { unique: false });
+    objectStore1.createIndex('tid', 'tid', { unique: false });
+    objectStore1.createIndex('data', 'data', { unique: false });
+    var objectStore2 = event.target.result.createObjectStore("viaSuperNodeMsg",{ keyPath: 'id',autoIncrement:true });
+    objectStore2.createIndex('from', 'from', { unique: false });
+    objectStore2.createIndex('to', 'to', { unique: false });
+    objectStore2.createIndex('data', 'data', { unique: false });
   }
+  idb.onsuccess = (event) => {
+    var db = event.target.result;
+    var obs = db.transaction("superNodeTweet", "readwrite").objectStore("superNodeTweet");
+    var parsedData = JSON.parse(data);
+    var tweetID = ''+parsedData.floID+'_'+parsedData.time; 
+    obs.add({tweetID:tweetID,floID:parsedData.floID,tid:tid,data:data});
+    db.close();
+  };
+}
+
+function SuperNode_storeViaSuperNodeMsg(from,to,data){
+    var idb = indexedDB.open("FLO_Tweet",2);
+    idb.onerror = (event) => { console.log("Error in opening IndexedDB!") };
+    idb.onupgradeneeded = (event) => {
+      var objectStore1 = event.target.result.createObjectStore("superNodeTweet",{ keyPath: 'tweetID' });
+      objectStore1.createIndex('floID', 'floID', { unique: false });
+      objectStore1.createIndex('tid', 'tid', { unique: false });
+      objectStore1.createIndex('data', 'data', { unique: false });
+      var objectStore2 = event.target.result.createObjectStore("viaSuperNodeMsg",{ keyPath: 'id',autoIncrement :true });
+      objectStore2.createIndex('from', 'from', { unique: false });
+      objectStore2.createIndex('to', 'to', { unique: false });
+      objectStore2.createIndex('data', 'data', { unique: false });
+    }
+    idb.onsuccess = (event) => {
+      var db = event.target.result;
+      var obs = db.transaction("viaSuperNodeMsg", "readwrite").objectStore("viaSuperNodeMsg");
+      obs.add({from:from,to:to,data:data});
+      db.close();
+    };
+  }
+  
+function SuperNode_sendviaMsgFromIDB(floID){
+  var receiverWS = new WebSocket("ws://"+profiles[floID].onionAddr+"/ws");
+  receiverWS.onopen = (event) => { 
+    var idb = indexedDB.open("FLO_Tweet",2);
+    idb.onerror = (event) => { console.log("Error in opening IndexedDB!") };
+    idb.onupgradeneeded = (event) => {
+      var objectStore1 = event.target.result.createObjectStore("superNodeTweet",{ keyPath: 'tweetID' });
+      objectStore1.createIndex('floID', 'floID', { unique: false });
+      objectStore1.createIndex('tid', 'tid', { unique: false });
+      objectStore1.createIndex('data', 'data', { unique: false });
+      var objectStore2 = event.target.result.createObjectStore("viaSuperNodeMsg",{ keyPath: 'id',autoIncrement:true });
+      objectStore2.createIndex('from', 'from', { unique: false });
+      objectStore2.createIndex('to', 'to', { unique: false });
+      objectStore2.createIndex('data', 'data', { unique: false });
+    };
+    idb.onsuccess = (event) => {
+      var db = event.target.result;
+      var obs = db.transaction("viaSuperNodeMsg", "readwrite").objectStore("viaSuperNodeMsg");
+      obs.openCursor().onsuccess = (event) => {
+        var cursor = event.target.result;
+        if(cursor) {
+          if(cursor.value.to == floID){
+            receiverWS.send(cursor.value.data);
+            cursor.delete();
+          }
+          cursor.continue();
+        }else{
+          console.log('Sent All messages to '+floID)
+        }
+      }
+      db.close();
+    };
+  };
+  receiverWS.onerror = (event) => { console.log('Connection Error to '+floID) };
+  receiverWS.onclose = (event) => { console.log('Disconnected from '+floID) };
+}

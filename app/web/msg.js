@@ -1,11 +1,11 @@
 var profiles;
-var receiverID,selfID,privKey;
+var receiverID,selfID,privKey,modSuperNode;
 var selfwebsocket,receiverWebSocket,recStat;
 
 function initMsgs(){
-  if( sessionStorage.profiles === undefined || sessionStorage.privKey === undefined || sessionStorage.selfID === undefined || sessionStorage.serverPass === undefined){
-    alert("Login credentials failed! Returning to home page!");
-    window.location.href = "home.html";
+  if( sessionStorage.profiles === undefined || sessionStorage.privKey === undefined || sessionStorage.selfID === undefined || sessionStorage.serverPass === undefined || sessionStorage.superNodeList === undefined ){
+    alert("Login credentials failed! Returning to login page!");
+    window.location.href = "index.html";
     return;
   }
   profiles = JSON.parse(sessionStorage.profiles);
@@ -13,21 +13,23 @@ function initMsgs(){
   privKey = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.privKey));
   selfID = sessionStorage.selfID;
   superNodeList = JSON.parse(sessionStorage.superNodeList);
-  kBucketObj.launchKBucket().then(function(result){
+  if(superNodeList.includes(selfID))
+    modSuperNode = true;
+  kBucketObj.launchKBucket().then(result => {
     console.log(result)
     initselfWebSocket();
-    readMsgfromIDB().then(function(result){
+    readMsgfromIDB().then(result => {
       listProfiles();
-      document.getElementById("sendMsgInput").addEventListener("keyup",function(event){
+      document.getElementById("sendMsgInput").addEventListener("keyup",(event) => {
         if(event.keyCode === 13){
           event.preventDefault();
           sendMsg();
         }
       });
-    }).catch(function(error){
+    }).catch(error => {
       console.log(error);
     });
-  }).catch(function(error){
+  }).catch(error => {
     console.log(error);
   });
 }
@@ -42,32 +44,30 @@ function listProfiles(){
     var element =  document.createElement("div");
     element.setAttribute("class", "media");
     element.innerHTML = `<a href="javascript:changeReceiver('${p}');"><div class="media-body">
-    <h5 class="media-heading">${profiles[p].name}</h5>
-    <small>@${p}</small>
-  </div></a>`
+                          <h5 class="media-heading">${profiles[p].name}</h5>
+                          <small>@${p}</small>
+                        </div></a>`
     profileList.appendChild(element);
   }
 }
 
 function initselfWebSocket(){
   selfWebsocket = new WebSocket("ws://"+location.host+"/ws");
-  selfWebsocket.onopen = function(evt){ 
+  selfWebsocket.onopen = (event) => { 
     console.log("Connecting");
     var serverPass = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.serverPass));
     selfWebsocket.send("$"+serverPass);
   };
-  selfWebsocket.onclose = function(evt){ 
-    console.log("DISCONNECTED");
-  };
-  selfWebsocket.onmessage = function(evt){
-    console.log(evt.data); 
-    if(evt.data[0] == '$')
+  selfWebsocket.onclose = (event) => { console.log("DISCONNECTED") };
+  selfWebsocket.onmessage = (event) => {
+    console.log(event.data); 
+    if(event.data[0] == '$')
       return;
     try{
-      data = JSON.parse(evt.data);
+      data = JSON.parse(event.data);
         if(data.follow && encrypt.verify(selfID, data.sign, profiles[data.floID].pubKey)){
           var idb = indexedDB.open("FLO_Tweet");
-          idb.onsuccess = function(event) {
+          idb.onsuccess = (event) => {
             var db = event.target.result;
             var obs = db.transaction("followers", "readwrite").objectStore("followers");
             obs.add(data.sign,data.floID);
@@ -76,7 +76,7 @@ function initselfWebSocket(){
           selfWebsocket.send(`F${data.floID}-${data.sign}`);
         }else if(data.unfollow && encrypt.verify(selfID, data.sign, profiles[data.floID].pubKey)){
           var idb = indexedDB.open("FLO_Tweet");
-          idb.onsuccess = function(event) {
+          idb.onsuccess = (event) => {
             var db = event.target.result;
             var obs = db.transaction("followers", "readwrite").objectStore("followers");
             obs.delete(data.floID);
@@ -89,19 +89,18 @@ function initselfWebSocket(){
             createMsgElement(data.from,data.time,msg,'R')
             storeMsg({time:data.time,floID:data.from,text:msg,type:'R'});
           }
+        }else if(modSuperNode){
+          superNodeMode(data);
         }
     }catch(error){
       console.log(error.message)
     }
   };
-  selfWebsocket.onerror = function(evt){ 
-    console.log(evt); 
-  };
+  selfWebsocket.onerror = (event) => { console.log(event) };
 }
 
 function readMsgfromIDB(){
-  return new Promise(
-    function(resolve,reject){
+  return new Promise((resolve,reject) => {
       var disp = document.getElementById("msgsContainer");
       for(floID in profiles){
         var element = document.createElement('div');
@@ -110,13 +109,11 @@ function readMsgfromIDB(){
         disp.appendChild(element);
       }
       var idb = indexedDB.open("FLO_Tweet");
-      idb.onerror = function(event) {
-        reject("Error in opening IndexedDB!");
-      };
-      idb.onsuccess = function(event) {
+      idb.onerror = (event) => { reject("Error in opening IndexedDB!") };
+      idb.onsuccess = (event) => {
         var db = event.target.result;
         var obs = db.transaction("messages", "readwrite").objectStore("messages");
-        obs.openCursor().onsuccess = function(event) {
+        obs.openCursor().onsuccess = (event) => {
           var cursor = event.target.result;
           if(cursor) {
             createMsgElement(cursor.value.floID,cursor.value.time,cursor.value.text,cursor.value.type);
@@ -128,8 +125,7 @@ function readMsgfromIDB(){
         };
         db.close();
       };
-    }
-  );
+  });
 }
 
 function changeReceiver(floID){
@@ -148,9 +144,9 @@ function changeReceiver(floID){
   document.getElementById(receiverID).style.display = 'block';
   try{
     receiverWebSocket = new WebSocket("ws://"+profiles[receiverID].onionAddr+"/ws");
-    receiverWebSocket.onopen = function(ev){ recStat = true; };
-    receiverWebSocket.onerror = function(ev) { recStat = false;};
-    receiverWebSocket.onclose = function(ev) { recStat = false; };
+    receiverWebSocket.onopen = (event) => { recStat = true; };
+    receiverWebSocket.onerror = (event) => { recStat = false;};
+    receiverWebSocket.onclose = (event) => { recStat = false; };
   }catch(e){
     console.log(e);
   }
@@ -161,23 +157,22 @@ function sendMsg(){
     alert("Select a contact and send message");
     return;
   }
-  var inp = document.getElementById('sendMsgInput')
-  var msg = inp.value
-  inp.value = ""
-  console.log(msg)
-  var time = Date.now()
-  var sign = encrypt.sign(msg,privKey)
-  var msgEncrypt = encrypt.encryptMessage(msg,profiles[receiverID].pubKey)
+  var inp = document.getElementById('sendMsgInput');
+  var msg = inp.value;
+  inp.value = "";
+  console.log(msg);
+  var time = Date.now();
+  var sign = encrypt.sign(msg,privKey);
+  var msgEncrypt = encrypt.encryptMessage(msg,profiles[receiverID].pubKey);
   var data = JSON.stringify({message:true,from:selfID,to:receiverID,time:time,secret:msgEncrypt.secret,sign:sign,pubVal:msgEncrypt.senderPublicKeyString});
-  
   if(recStat)
     receiverWebSocket.send(data);
   else{
-    var SNdata = JSON.stringify({viaSuperNodeMsg:true,from:selfID,to:receiverID,data:data})
-    sendDataToSuperNode(receiverID,SNdata)
+    var SNdata = JSON.stringify({viaSuperNodeMsg:true,from:selfID,to:receiverID,data:data});
+    sendDataToSuperNode(receiverID,SNdata);
   }
   console.log(`sentMsg : ${data}`);
-  createMsgElement(receiverID,time,msg,'S')
+  createMsgElement(receiverID,time,msg,'S');
   storeMsg({time:time,floID:receiverID,text:msg,type:'S'});
 }
 
@@ -193,18 +188,4 @@ function createMsgElement(floID,time,msg,type){
               </div>
             </div>`;
   msgField.appendChild(element);
-}
-
-function storeMsg(data){
-  var idb = indexedDB.open("FLO_Tweet");
-  idb.onerror = function(event) {
-    console.log("Error in opening IndexedDB!");
-  };
-  idb.onsuccess = function(event) {
-    var db = event.target.result;
-    var obs = db.transaction("messages", "readwrite").objectStore("messages");
-    data.msgID = `${data.time}_${data.floID}`;
-    obs.add(data);
-    db.close();
-  };
 }
