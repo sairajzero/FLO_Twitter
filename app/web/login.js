@@ -58,13 +58,13 @@ function disableForm(formId, disableFlag) {
 
 function connect(){
     document.getElementById("alert-container").innerHTML = '';
-    var serverPass = document.getElementById('serverPass');
+    var serverPass = document.getElementById('serverPass').value;
     initselfWebSocket(serverPass).then(result => {
-        customAlert(result,success);
+        customAlert(result,'success');
         disableForm('serverConnect',true);
         disableForm('userSignIn',false);
     }).catch(error => {
-        customAlert(error,danger);
+        customAlert(error,'danger');
     });
 }
 
