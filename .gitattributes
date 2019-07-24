@@ -1,0 +1,6 @@
+*.gitattributes   linguist-vendored
+util/mongoose.c   linguist-vendored
+util/mongoose.h   linguist-vendored
+app/web/init.js   linguist-vendored
+
+.gitattributes  export-ignore
