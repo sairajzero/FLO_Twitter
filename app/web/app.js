@@ -6,6 +6,14 @@ window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.ms
 if (!window.indexedDB) {
      window.alert("Your browser doesn't support a stable version of IndexedDB.")
 }
+
+const adminID = "FMabh7gTSyKPAb2Wi9sK5CBhV8nVFk783i"; 
+
+if(blockchain == "FLO")
+  var api_url = `https://flosight.duckdns.org/`;
+else if(blockchain == "FLO_TEST")
+  var api_url = `https://testnet-flosight.duckdns.org/`;
+
 var supernodeKBucket;
 var superNodeList;
 var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];

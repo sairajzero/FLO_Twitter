@@ -2,13 +2,6 @@ if( sessionStorage.profiles && sessionStorage.privKey && sessionStorage.selfID &
     window.location.replace("home.html");
 }
 
-const adminID = "FMabh7gTSyKPAb2Wi9sK5CBhV8nVFk783i"; 
-
-if(blockchain == "FLO")
-  var api_url = `https://flosight.duckdns.org/`;
-else if(blockchain == "FLO_TEST")
-  var api_url = `https://testnet-flosight.duckdns.org/`;
-
 const sendAmt = 0.001 ;       
 const fee = 0.0005;
 var username,privKey,floID;
@@ -98,6 +91,7 @@ function signIn(){
 function login(){
     sessionStorage.privKey = JSON.stringify(encrypt.createShamirsSecretShares(privKey,10,10));
     sessionStorage.selfID = floID;
+    disableForm('userSignIn',true);
     customAlert(`Welcome ${username}`,'info'); 
     setTimeout(window.location.replace("home.html"), 3000);
 }
