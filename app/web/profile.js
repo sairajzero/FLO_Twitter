@@ -16,8 +16,10 @@ function viewProfile(){
   var url = new URL(window.location.href);
   profileID = url.searchParams.get("floID");
   superNodeList = new Set(JSON.parse(sessionStorage.superNodeList));
-  if(superNodeList.has(selfID))
+  if(superNodeList.has(selfID)){
     modSuperNode = true;
+    setInterval(reloadInitData, 3600000);
+  }
   kBucketObj.launchKBucket().then(result => {
     console.log(result)
     listProfiles();
@@ -199,7 +201,10 @@ function initselfWebSocket(){
     var serverPass = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.serverPass));
     selfWebsocket.send("$"+serverPass);
   };
-  selfWebsocket.onclose = (event) => { console.log("DISCONNECTED") };
+  selfWebsocket.onclose = (event) => { 
+    console.log("DISCONNECTED");
+    initselfWebSocket();
+  };
   selfWebsocket.onmessage = (event) => {
     console.log(event.data); 
     if(event.data[0] == '$')
