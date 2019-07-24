@@ -1,6 +1,5 @@
 if( sessionStorage.profiles && sessionStorage.privKey && sessionStorage.selfID && sessionStorage.serverPass && sessionStorage.superNodeList ){
     window.location.replace("home.html");
-    return;
 }
 
 const adminID = "FMabh7gTSyKPAb2Wi9sK5CBhV8nVFk783i"; 
