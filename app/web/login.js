@@ -60,6 +60,7 @@ function connect(){
     document.getElementById("alert-container").innerHTML = '';
     var serverPass = document.getElementById('serverPass').value;
     initselfWebSocket(serverPass).then(result => {
+        sessionStorage.serverPass = JSON.stringify(encrypt.createShamirsSecretShares(serverPass,10,10));
         customAlert(result,'success');
         disableForm('serverConnect',true);
         disableForm('userSignIn',false);
@@ -94,12 +95,11 @@ function signIn(){
     }
 }
 
-async function login(){
+function login(){
     sessionStorage.privKey = JSON.stringify(encrypt.createShamirsSecretShares(privKey,10,10));
     sessionStorage.selfID = floID;
     customAlert(`Welcome ${username}`,'info'); 
-    await sleep(3000);
-    window.location.replace("home.html");
+    setTimeout(window.location.replace("home.html"), 3000);
 }
 
 function signUp(){
