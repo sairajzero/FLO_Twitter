@@ -168,8 +168,8 @@ function pingProfileServerforNewTweets(floID){
   getLastTweetCount(floID).then(result => {
     console.log(profileWebsocket);
     profileWebsocket.send(`>${result}`);
-    console.log("sent");
-    resolve('Sent New tweet request to user server!');
+    console.log("Sent New tweet request to user server!");
+    //resolve('Sent New tweet request to user server!');
   }).catch(error => {
     console.log(error);
   });               
