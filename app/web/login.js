@@ -15,9 +15,9 @@ const fee = 0.0005;
 var username,privKey,floID;
 var profiles;
 
-function refreshAPIdata(){
+function initAPIdata(){
     return new Promise((resolve,reject) => {
-        console.log("refreshAPIdata");
+        console.log("initAPIdata");
         getDatafromAPI().then(result => {
             console.log(result);
             getProfilesfromIDB().then(result => {
@@ -26,8 +26,8 @@ function refreshAPIdata(){
                 sessionStorage.profiles = JSON.stringify(profiles);
                 getSuperNodeListfromIDB().then(result => {
                     console.log(result)
-                    superNodeList = result;
-                    sessionStorage.superNodeList = JSON.stringify(superNodeList);
+                    superNodeList = new Set(result);
+                    sessionStorage.superNodeList = JSON.stringify(Array.from(superNodeList));
                     resolve('Refresh API data Successful!')
                 }).catch(error => {
                     reject(error);
@@ -224,40 +224,6 @@ function getDatafromAPI(){
     });
 }    
 
-function storeProfile(data){
-    return new Promise((resolve,reject) =>  {
-          var idb = indexedDB.open("FLO_Tweet");
-          idb.onerror = (event) => { console.log("Error in opening IndexedDB!") };
-          idb.onsuccess = (event) => {
-              var db = event.target.result;
-              var obs = db.transaction('profiles', "readwrite").objectStore('profiles');
-              objectRequest = obs.put(data);
-              objectRequest.onerror = (event) => { reject(Error('Error occured: Unable to store data'))};
-              objectRequest.onsuccess = (event) => { resolve('Data saved OK') };
-              db.close();
-          };
-    });
-}
-
-function storeSuperNodeData(data){
-    return new Promise((resolve,reject) => {
-        var idb = indexedDB.open("FLO_Tweet");
-        idb.onerror = (event) => { reject("Error in opening IndexedDB!"); };
-        idb.onsuccess = (event) => {
-            var db = event.target.result;
-            var obs = db.transaction('superNodes', "readwrite").objectStore('superNodes');
-            if(data.addNodes)
-              for(var i=0; i<data.addNodes.length; i++)
-                obs.add(true,data.addNodes[i])
-            if(data.removeNodes)
-              for(var i=0; i<data.removeNodes.length; i++)
-                obs.delete(data.removeNodes[i])
-            db.close();
-            resolve('Updated superNodes list in IDB');
-          };
-    });
-}
-
 function getProfilesfromIDB(){
     return new Promise((resolve,reject) => {
         var idb = indexedDB.open("FLO_Tweet");
@@ -306,10 +272,6 @@ function initselfWebSocket(serverPass){
         selfWebsocket.onerror = (event) => { console.log(event) };
     });
 }
-
-
-
-//Script for AJAX, and register functions
 
 function registerID(sender,onionAddr,wif,pubkey,username) {
     return new Promise((resolve,reject) => {

@@ -12,8 +12,8 @@ function initMsgs(){
   console.log(profiles);
   privKey = encrypt.retrieveShamirSecret(JSON.parse(sessionStorage.privKey));
   selfID = sessionStorage.selfID;
-  superNodeList = JSON.parse(sessionStorage.superNodeList);
-  if(superNodeList.includes(selfID))
+  superNodeList = new Set(JSON.parse(sessionStorage.superNodeList));
+  if(superNodeList.has(selfID))
     modSuperNode = true;
   kBucketObj.launchKBucket().then(result => {
     console.log(result)
@@ -93,7 +93,7 @@ function initselfWebSocket(){
           superNodeMode(data);
         }
     }catch(error){
-      console.log(error.message)
+      console.log(error)
     }
   };
   selfWebsocket.onerror = (event) => { console.log(event) };

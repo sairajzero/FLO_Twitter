@@ -15,15 +15,15 @@ function viewProfile(){
   selfID = sessionStorage.selfID;
   var url = new URL(window.location.href);
   profileID = url.searchParams.get("floID");
-  superNodeList = JSON.parse(sessionStorage.superNodeList);
-  if(superNodeList.includes(selfID))
+  superNodeList = new Set(JSON.parse(sessionStorage.superNodeList));
+  if(superNodeList.has(selfID))
     modSuperNode = true;
   kBucketObj.launchKBucket().then(result => {
     console.log(result)
     listProfiles();
     displayProfile(profileID);   
   }).catch(error => {
-    console.log(error.message);
+    console.log(error);
   });
 }
 
@@ -57,7 +57,7 @@ function displayProfile(profileID){
       profileServerStatus = false;
     });
   }).catch(error => {
-    console.log(error.message);
+    console.log(error);
   }); 
 }
 
@@ -147,7 +147,7 @@ function connectToProfileServer(floID){
           storeTweet({floID:floID,time:data.time,data:data.tweet},id);
           createTweetElement(floID,data.time,data.tweet);
         }catch(error){
-          console.log(error.message);
+          console.log(error);
         }
       }
   });
@@ -158,7 +158,7 @@ function pingSuperNodeforNewTweets(floID){
     var data = JSON.stringify({reqNewTweets:true,floID:floID,tid:result,requestor:selfID})
     sendDataToSuperNode(floID,data);
   }).catch(error => {
-    console.log(error.message);
+    console.log(error);
   });       
 }
 
@@ -169,7 +169,7 @@ function pingProfileServerforNewTweets(floID){
     console.log("sent");
     resolve('Sent New tweet request to user server!');
   }).catch(error => {
-    console.log(error.message);
+    console.log(error);
   });               
 }
 
@@ -239,7 +239,7 @@ function initselfWebSocket(){
           superNodeMode(data);
         }
     }catch(error){
-      console.log(error.message)
+      console.log(error)
     }
   };
   selfWebsocket.onerror = (event) => { console.log(event) };
