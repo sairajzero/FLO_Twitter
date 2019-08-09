@@ -316,7 +316,7 @@ function ajax(method, uri){
 }
 
 function reloadInitData(){
-    refreshAPIdata.then(result => {
+    refreshAPIdata().then(result => {
         console.log(result);
         sessionStorage.profiles = JSON.stringify(profiles);
         sessionStorage.superNodeList = JSON.stringify(Array.from(superNodeList));
