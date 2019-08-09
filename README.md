@@ -10,7 +10,7 @@ Since the blockchain data is immutable, it will provide a continous uniterruptab
 
 ## Requirements
 1. Ubuntu OS or its derivatives (or) Andoid
-2. Onion Browser ([Brave]([https://brave.com/](https://brave.com/)) for Desktop or [Tor Browser](https://play.google.com/store/apps/details?id=org.torproject.torbrowser)/[Orbot](https://play.google.com/store/apps/details?id=org.torproject.android) for Android)
+2. Onion Browser ([Brave](https://brave.com/) for Desktop or [Tor Browser](https://play.google.com/store/apps/details?id=org.torproject.torbrowser)/[Orbot](https://play.google.com/store/apps/details?id=org.torproject.android) for Android)
 3. FLO ID
 
 ## Installation
