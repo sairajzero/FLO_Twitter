@@ -33,8 +33,7 @@ The FLO_Twitter WSS can either run on Ubuntu OS or Android
 4. Open Orbot 
 	* Open Options (`:`) -> Hidden Services -> Hosted Services
 		* Add New Service with local port and onion port as `3232` and save it
-	* Enable `VPN Mode`
-	* Open :gear: 
+	* Enable `VPN Mode` and open :gear: 
 		* add `FLO_Twitter` and the browser ([Orfox](https://play.google.com/store/apps/details?id=info.guardianproject.orfox) ll be enabled by default)
 	
 
