@@ -99,8 +99,10 @@ function login(){
 function signUp(){
     registerID(floID,window.location.host,privKey,encrypt.getPubKeyHex(privKey),username).then(result =>{
         customAlert(`Registration Successful!<br/> txid : ${result}`,'success');
-        reloadInitData().then(result => {
+        refreshAPIdata().then(result => {
             console.log(result);
+            sessionStorage.profiles = JSON.stringify(profiles);
+            sessionStorage.superNodeList = JSON.stringify(Array.from(superNodeList));
             login();
         }).catch(error => {
             console.log(error);
