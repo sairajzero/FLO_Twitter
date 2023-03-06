@@ -1,0 +1,133 @@
+const sqlite3 = require('sqlite3').verbose();
+
+const DATABASE_NAME = './app.db';
+
+var _db = new sqlite3.Database(DATABASE_NAME, (err) => {
+    if (err) return reject(err);
+    _db.run("CREATE IN NOT EXISTS `Logs` ("
+        + " `userID` CHAR(34) NOT NULL,"
+        + " `request` TEXT NOT NULL,"
+        + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
+        + " `time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        + ")");
+
+    _db.run("CREATE IF NOT EXISTS `Tweets` ("
+        + " `id` VARCHAR(128) NOT NULL PRIMARY KEY,"
+        + " `time` BIGINT NOT NULL,"
+        + " `content` TEXT NOT NULL,"
+        + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
+        + " `retweet_id` VARCHAR(128)"
+        + ")");
+
+    _db.run("CREATE IF NOT EXISTS `Following`("
+        + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
+        + " `time` BIGINT NOT NULL,"
+        + " `sign` VARCHAR(160) NOT NULL UNIQUE"
+        + ")");
+
+    _db.run("CREATE IF NOT EXISTS `Followers` ("
+        + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
+        + " `time` BIGINT NOT NULL,"
+        + " `sign` VARCHAR(160) NOT NULL UNIQUE"
+        + ")");
+
+    _db.run("CREATE IF NOT EXISTS `Messages` ("
+        + " `senderID` CHAR(34) NOT NULL,"
+        + " `receiverID` CHAR(34) NOT NULL,"
+        + " `time` BIGINT NOT NULL,"
+        + " `message` TEXT NOT NULL,"
+        + " `sign` VARCHAR(160) NOT NULL UNIQUE"
+        + ")");
+});
+
+function log(userID, request, sign) {
+    return new Promise((resolve, reject) => {
+        _db.run("INSERT INTO `Logs` (userID, request, sign) VALUE (?)", [[userID, request, sign]],
+            (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function checkDuplicateSign(sign) {
+    return new Promise((resolve, reject) => {
+        _db.get("SELECT COUNT(*) AS n FROM `Logs` WHERE sign=?", [sign],
+            (err, row) => err ? reject(error) : resolve(row.n !== 0))
+    });
+}
+
+function storeTweet(id, content, time, sign, retweet_id) {
+    return new Promise((resolve, reject) => {
+        _db.run("INSERT INTO `Tweets` (id, content, time, sign, retweet_id) VALUE (?)", [[id, content, time, sign, retweet_id]],
+            (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function removeTweet(id) {
+    return new Promise((resolve, reject) => {
+        _db.run("DELETE FROM `Tweets` WHERE id=?", [id], (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function getTweet(id) {
+    return new Promise((resolve, reject) => {
+        _db.get("SELECT * FROM `Tweets` WHERE id=?", [id],
+            (err, row) => err ? reject(err) : resolve(row));
+    })
+}
+
+function getTweets(time) {
+    return new Promise((resolve, reject) => {
+        _db.all("SELECT * FROM `Tweets` WHERE time>?", [time],
+            (err, rows) => err ? reject(err) : resolve(rows));
+    })
+}
+
+function follow(userID, time, sign) {
+    return new Promise((resolve, reject) => {
+        _db.run("INSERT INTO `Following` (userID, time, sign) VALUE (?)", [[userID, time, sign]],
+            (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function unfollow(userID) {
+    return new Promise((resolve, reject) => {
+        _db.run("DELETE FROM `Following` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function add_follower(userID, time, sign) {
+    return new Promise((resolve, reject) => {
+        _db.run("INSERT INTO `Followers` (userID, time, sign) VALUE (?)", [[userID, time, sign]],
+            (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function rm_follower(userID) {
+    return new Promise((resolve, reject) => {
+        _db.run("DELETE FROM `Followers` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function storeMessage(senderID, receiverID, time, message, sign) {
+    return new Promise((resolve, reject) => {
+        _db.run("INSERT INTO `Messages` (senderID, receiverID, time, message, sign) VALUE (?)", [[senderID, receiverID, time, message, sign]],
+            (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function getMessages(time = 0) {
+    return new Promise((resolve, reject) => {
+        _db.all("SELECT * FROM `Messages` WHERE time>?", [time],
+            (err, rows) => err ? reject(err) : resolve(rows));
+    })
+}
+
+module.exports = {
+    close: _db.close, log, checkDuplicateSign,
+    storeTweet, removeTweet,
+    getTweet, getTweets,
+    follow, unfollow,
+    add_follower, rm_follower,
+    storeMessage, getMessages
+}
+
+
