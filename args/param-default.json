@@ -1,0 +1,33 @@
+{
+    "screen": {
+        "height": 1160,
+        "width": 2000,
+        "colorDepth": 24,
+        "availHeight": 1080,
+        "availWidth": 1920,
+        "pixelDepth": 24
+    },
+    "navigator": {
+        "userAgent": "Node/14.17.3 (Linux; aarch64; arm)",
+        "plugins": [{
+            "name": "SQLite",
+            "filename": "sqlite",
+            "description": "A node.js driver for SQLite."
+        }, {
+            "name": "Express",
+            "filename": "express",
+            "description": "Fast, unopinionated, minimalist web framework for Node.js."
+        }],
+        "mimeTypes": [{
+            "description": "JSON",
+            "type": "application/json",
+            "suffixes": "json"
+        }],
+        "cookieEnabled": false,
+        "language": "en-US"
+    },
+    "history": {
+        "length": 512
+    },
+    "location": "protocol://subdomain.example.domain/path"
+}
