@@ -94,6 +94,13 @@ function unfollow(userID) {
     })
 }
 
+function get_following() {
+    return new Promise((resolve, reject) => {
+        _db.all("SELECT * FROM `Following`", (err, rows) => err ? reject(err) : resolve(rows));
+    })
+}
+
+
 function add_follower(userID, time, sign) {
     return new Promise((resolve, reject) => {
         _db.run("INSERT INTO `Followers` (userID, time, sign) VALUE (?)", [[userID, time, sign]],
@@ -104,6 +111,12 @@ function add_follower(userID, time, sign) {
 function rm_follower(userID) {
     return new Promise((resolve, reject) => {
         _db.run("DELETE FROM `Followers` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+    })
+}
+
+function get_followers() {
+    return new Promise((resolve, reject) => {
+        _db.all("SELECT * FROM `Followers`", (err, rows) => err ? reject(err) : resolve(rows));
     })
 }
 
@@ -126,7 +139,9 @@ module.exports = {
     storeTweet, removeTweet,
     getTweet, getTweets,
     follow, unfollow,
+    get_following,
     add_follower, rm_follower,
+    get_followers,
     storeMessage, getMessages
 }
 
