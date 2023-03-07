@@ -1,25 +1,4 @@
-const eCode = {
-
-    INVALID_SERVER: '000',
-
-    //INVALID INPUTS: 0XX
-    INVALID_REQUEST_FORMAT: '001',
-    MISSING_PARAMETER: '099',
-    ACCESS_DENIED: '002',
-    INVALID_FLO_ID: '011',
-    INVALID_PRIVATE_KEY: '013',
-    INVALID_PUBLIC_KEY: '014',
-    INVALID_SIGNATURE: '015',
-    EXPIRED_SIGNATURE: '016',
-    DUPLICATE_SIGNATURE: '017',
-    //INCORRECT DATA: 1XX
-
-    //OTHERS
-    NODES_OFFLINE: '404',
-    INTERNAL_ERROR: '500'
-}
-
-
+const eCode = require('../public/scripts/tweeter').errorCode
 
 const INVALID = function (ecode, message) {
     if (!(this instanceof INVALID))
