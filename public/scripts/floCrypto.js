@@ -1,4 +1,4 @@
-(function (EXPORTS) { //floCrypto v2.3.5a
+(function (EXPORTS) { //floCrypto v2.3.6
     /* FLO Crypto Operators */
     'use strict';
     const floCrypto = EXPORTS;
@@ -151,6 +151,20 @@
     Object.defineProperties(floCrypto, {
         newID: {
             get: () => generateNewID()
+        },
+        hashID: {
+            value: (str) => {
+                let bytes = ripemd160(Crypto.SHA256(str, { asBytes: true }), { asBytes: true });
+                console.debug(bytes);
+                bytes.unshift(bitjs.pub);
+                var hash = Crypto.SHA256(Crypto.SHA256(bytes, {
+                    asBytes: true
+                }), {
+                    asBytes: true
+                });
+                var checksum = hash.slice(0, 4);
+                return bitjs.Base58.encode(bytes.concat(checksum));
+            }
         },
         tmpID: {
             get: () => {
@@ -321,6 +335,21 @@
             asBytes: true
         });
         return bitjs.Base58.encode(raw.bytes.concat(hash.slice(0, 4)));
+    }
+
+    //Convert raw address bytes to floID
+    floCrypto.rawToFloID = function (raw_bytes) {
+        if (typeof raw_bytes === 'string')
+            raw_bytes = Crypto.util.hexToBytes(raw_bytes);
+        if (raw_bytes.length != 20)
+            return null;
+        raw_bytes.unshift(bitjs.pub);
+        let hash = Crypto.SHA256(Crypto.SHA256(raw_bytes, {
+            asBytes: true
+        }), {
+            asBytes: true
+        });
+        return bitjs.Base58.encode(raw_bytes.concat(hash.slice(0, 4)));
     }
 
     //Convert the given multisig address (any blockchain) to equivalent multisig floID
