@@ -9,7 +9,7 @@ function tweet(content, time, sign, retweet_id) {
     return new Promise((resolve, reject) => {
         let id = tweet_id(content, time);
         DB.storeTweet(id, content, time, sign, retweet_id)
-            .then(result => resolve(id))
+            .then(result => resolve({ tweet_id: id }))
             .catch(error => reject(error))
     })
 }
