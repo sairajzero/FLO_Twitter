@@ -41,6 +41,7 @@ app.post('/follow', Request.follow);
 app.post('/unfollow', Request.unfollow);
 
 //get(all)
+app.get('/user', Request.get_user);
 app.get('/tweets', Request.get_tweets);
 app.get('/followers', Request.get_followers);
 app.get('/following', Request.get_following);

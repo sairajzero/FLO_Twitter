@@ -14,9 +14,9 @@ function tweet(content, time, sign, retweet_id) {
     })
 }
 
-function untweet(id) {
+function untweet(id, time, sign) {
     return new Promise((resolve, reject) => {
-        DB.removeTweet(id)
+        DB.removeTweet(id, time, sign)
             .then(result => resolve(result))
             .catch(error => reject(error))
     })
@@ -72,6 +72,16 @@ function rm_follower(follower) {
 }
 
 /* Get API */
+function get_user() {
+    return new Promise((resolve, reject) => {
+        let floID = keys.flo_address, pubKey = keys.pubKey;
+        if (!floID)
+            reject("Server user (public key) not configured");
+        else
+            resolve({ floID, pubKey });
+    })
+}
+
 function get_tweet(id) {
     return new Promise((resolve, reject) => {
         DB.getTweet(id)
@@ -109,6 +119,7 @@ module.exports = {
     follow, unfollow,
     add_follower, rm_follower,
     message_sent, message_receive,
+    get_user,
     get_tweet, get_tweets,
     get_followers, get_following
 }

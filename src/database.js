@@ -1,44 +1,58 @@
 const sqlite3 = require('sqlite3').verbose();
 
-const DATABASE_NAME = './app.db';
+var _db;
 
-var _db = new sqlite3.Database(DATABASE_NAME, (err) => {
-    if (err) return reject(err);
-    _db.run("CREATE IN NOT EXISTS `Logs` ("
-        + " `userID` CHAR(34) NOT NULL,"
-        + " `request` TEXT NOT NULL,"
-        + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
-        + " `time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-        + ")");
+function init(db_name) {
+    return new Promise((resolve, reject) => {
+        const DATABASE_NAME = `./${db_name}.db`;
+        _db = new sqlite3.Database(DATABASE_NAME, (err) => {
+            if (err) return reject(err);
+            _db.serialize(() => {
 
-    _db.run("CREATE IF NOT EXISTS `Tweets` ("
-        + " `id` VARCHAR(128) NOT NULL PRIMARY KEY,"
-        + " `time` BIGINT NOT NULL,"
-        + " `content` TEXT NOT NULL,"
-        + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
-        + " `retweet_id` VARCHAR(128)"
-        + ")");
+                _db.run("CREATE IN NOT EXISTS `Logs` ("
+                    + " `userID` CHAR(34) NOT NULL,"
+                    + " `request` TEXT NOT NULL,"
+                    + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
+                    + " `time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+                    + ")");
 
-    _db.run("CREATE IF NOT EXISTS `Following`("
-        + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
-        + " `time` BIGINT NOT NULL,"
-        + " `sign` VARCHAR(160) NOT NULL UNIQUE"
-        + ")");
+                _db.run("CREATE IF NOT EXISTS `Tweets` ("
+                    + " `id` VARCHAR(128) NOT NULL PRIMARY KEY,"
+                    + " `time` BIGINT NOT NULL,"
+                    + " `content` TEXT,"
+                    + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
+                    + " `retweet_id` VARCHAR(128)"
+                    + ")");
 
-    _db.run("CREATE IF NOT EXISTS `Followers` ("
-        + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
-        + " `time` BIGINT NOT NULL,"
-        + " `sign` VARCHAR(160) NOT NULL UNIQUE"
-        + ")");
+                _db.run("CREATE IF NOT EXISTS `Following`("
+                    + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
+                    + " `time` BIGINT NOT NULL,"
+                    + " `sign` VARCHAR(160) NOT NULL UNIQUE"
+                    + ")");
 
-    _db.run("CREATE IF NOT EXISTS `Messages` ("
-        + " `senderID` CHAR(34) NOT NULL,"
-        + " `receiverID` CHAR(34) NOT NULL,"
-        + " `time` BIGINT NOT NULL,"
-        + " `message` TEXT NOT NULL,"
-        + " `sign` VARCHAR(160) NOT NULL UNIQUE"
-        + ")");
-});
+                _db.run("CREATE IF NOT EXISTS `Followers` ("
+                    + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
+                    + " `time` BIGINT NOT NULL,"
+                    + " `sign` VARCHAR(160) NOT NULL UNIQUE"
+                    + ")");
+
+                _db.run("CREATE IF NOT EXISTS `Messages` ("
+                    + " `senderID` CHAR(34) NOT NULL,"
+                    + " `receiverID` CHAR(34) NOT NULL,"
+                    + " `time` BIGINT NOT NULL,"
+                    + " `message` TEXT NOT NULL,"
+                    + " `sign` VARCHAR(160) NOT NULL UNIQUE"
+                    + ")");
+
+                _db.get("SELECT time FROM `Logs` LIMIT 1", (err) => {
+                    if (err) return reject(err);
+                    exports.close = _db.close;
+                    resolve("Database initiated");
+                })
+            })
+        });
+    })
+}
 
 function log(userID, request, sign) {
     return new Promise((resolve, reject) => {
@@ -61,9 +75,10 @@ function storeTweet(id, content, time, sign, retweet_id) {
     })
 }
 
-function removeTweet(id) {
+function removeTweet(id, time, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("DELETE FROM `Tweets` WHERE id=?", [id], (err) => err ? reject(err) : resolve(true));
+        _db.run("UPDATE `Tweets` SET time=?, sign=?, content=NULL WHERE id=?", [time, sign, id],
+            (err) => err ? reject(err) : resolve(true));
     })
 }
 
@@ -134,8 +149,9 @@ function getMessages(time = 0) {
     })
 }
 
-module.exports = {
-    close: _db.close, log, checkDuplicateSign,
+const exports = module.exports = {
+    init,
+    log, checkDuplicateSign,
     storeTweet, removeTweet,
     getTweet, getTweets,
     follow, unfollow,
@@ -144,5 +160,3 @@ module.exports = {
     get_followers,
     storeMessage, getMessages
 }
-
-

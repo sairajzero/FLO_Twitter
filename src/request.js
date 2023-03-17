@@ -91,7 +91,7 @@ function tweet(req, res) {
 function untweet(req, res) {
     let { userID, pubKey, tweet_id, time, sign } = req.body;
     processRequest(res, true, userID, pubKey, sign, "UnTweet", { type: "untweet", tweet_id, time },
-        () => process.untweet(tweet_id));
+        () => process.untweet(tweet_id, time, sign));
 }
 
 function follow(req, res) {
@@ -118,6 +118,10 @@ function message(req, res) {
     );
 }
 
+function get_user(req, res) {
+    getRequest(res, "Get User ID", () => process.get_user());
+}
+
 function get_tweets(req, res) {
     let { id, time } = req.query;
     if (typeof id !== 'undefined')
@@ -141,6 +145,7 @@ module.exports = {
     tweet, untweet,
     follow, unfollow,
     message,
+    get_user,
     get_tweets,
     get_followers, get_following
 }
