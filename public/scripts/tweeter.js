@@ -1,29 +1,31 @@
 (function (EXPORTS) {
     const floTwitter = EXPORTS;
 
-    var self_server_url = 'localhost:8080/';
+    var host_url = window.location.origin;
 
-    function fetch_api(server_uri, apicall, options) {
+    const extractURL = url => ['http://', 'https://', '/'].reduce((a, p) => a.replace(p, ''), url);
+
+    function fetch_api(server_uri, api_uri, options) {
         return new Promise((resolve, reject) => {
-            console.debug(server_uri + apicall);
-            (options ? fetch(server_uri + api, options) : fetch(server_uri + api))
+            console.debug(server_uri + api_uri);
+            (options ? fetch(server_uri + api_uri, options) : fetch(server_uri + api_uri))
                 .then(result => resolve(result))
                 .catch(error => reject(error))
         })
     }
 
-    function fetch_self(apicall, options) {
+    function fetch_self(api_uri, options) {
         return new Promise((resolve, reject) => {
-            fetch_api(self_server_url, apicall, options)
+            fetch_api(host_url, api_uri, options)
                 .then(result => resolve(result))
                 .catch(error => reject(error))
         })
     }
 
-    function fetch_target(userID, apicall, options) {
+    function fetch_target(userID, api_uri, options) {
         return new Promise((resolve, reject) => {
             getUserURL(userID).then(target_url => {
-                fetch_api(target_url, apicall, options)
+                fetch_api(target_url, api_uri, options)
                     .then(result => resolve(result))
                     .catch(error => reject(error))
             }).catch(error => reject(error))
@@ -329,18 +331,18 @@
                             }
                         }
                     }
-                    if (user_details) //new user details found in blockchain, write and resolve the details
-                        Promise.all([
-                            compactIDB.writeData("users", user_details, user_floID),
-                            compactIDB.writeData("lastTx", result.totalTxs, user_floID)
-                        ]).then(result => resolve(user_details)).catch(error => reject(error))
-                    else //no new user details found in blockchain, check in IDB then resolve/reject if found
-                        compactIDB.readData("users", user_floID).then(user_details => {
-                            if (user_details)
-                                resolve(user_details);
-                            else
-                                reject(CustomError(CustomError.BAD_RESPONSE_CODE, "User not found", errorCode.USER_NOT_FOUND))
-                        })
+                    compactIDB.writeData("lastTx", result.totalTxs, user_floID).then(result => {
+                        if (user_details) //new user details found in blockchain, write and resolve the details
+                            compactIDB.writeData("users", user_details, user_floID)
+                                .then(result => resolve(user_details)).catch(error => reject(error))
+                        else //no new user details found in blockchain, check in IDB then resolve/reject if found
+                            compactIDB.readData("users", user_floID).then(user_details => {
+                                if (user_details)
+                                    resolve(user_details);
+                                else
+                                    reject(CustomError(CustomError.BAD_RESPONSE_CODE, "User not found", errorCode.USER_NOT_FOUND))
+                            })
+                    }).catch(error => reject(error))
                 }).catch(error => reject(error))
             }).catch(error => reject(error))
         })
@@ -357,9 +359,8 @@
                 appendix: {},
                 userSettings: {}
             }
-            let user_db = `${floGlobals.application}_${floCrypto.toFloID(user.id)}`;
+            let user_db = `${floGlobals.application}_${floCrypto.toFloID(floDapps.user.id)}`;
             compactIDB.initDB(user_db, obj).then(result => {
-                console.log(result)
                 compactIDB.setDefaultDB(user_db);
                 resolve("floTwitter UserDB Initated Successfully")
             }).catch(error => reject(error));
@@ -370,10 +371,9 @@
         return new Promise((resolve, reject) => {
             initUserDB().then(result => {
                 getUser(floDapps.user.id).then(details => {
-                    console.debug(window.location, details.address)
                     responseParse(fetch_self('/user')).then(server => {
                         if (floCrypto.isSameAddr(server.floID, floDapps.user.id)) {
-                            if (details.address === self_server_url)
+                            if (extractURL(details.address) === extractURL(host_url))
                                 resolve(details);
                             else resolve(false); //registered address is different from current
                         } else
