@@ -23,4 +23,4 @@ INTERNAL.prototype.toString = function () {
 }
 INTERNAL.str = (ecode, message) => INTERNAL(ecode, message).toString();
 
-module.exports = { INTERNAL, INVALID, eCode, pCode }
+module.exports = { INTERNAL, INVALID, eCode }

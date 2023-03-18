@@ -1,4 +1,4 @@
-const { INVALID, eCode, pCode } = require("./error");
+const { INVALID, eCode } = require("./error");
 const DB = require("./database");
 const keys = require("./keys");
 

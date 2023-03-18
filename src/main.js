@@ -3,7 +3,6 @@ global.floGlobals = require('../public/scripts/floGlobals');
 require('./set_globals');
 require('../public/scripts/lib');
 global.floCrypto = require('../public/scripts/floCrypto');
-global.floBlockchainAPI = require('../public/scripts/floBlockchainAPI');
 
 const DB = require('./database');
 const keys = require('./keys');
@@ -15,8 +14,9 @@ const server = require('./server');
         if (/^-u=/i.test(arg) || /^-user=/i.test(arg))
             pubkey = arg.split(/=(.*)/s)[1];
         if (/^-p=/i.test(arg) || /^-port=/i.test(arg))
-            pubkey = arg.split(/=(.*)/s)[1];
+            port = arg.split(/=(.*)/s)[1];
     }
+    console.debug(pubkey, port);
     if (pubkey) {
         try {
             keys.set_key(pubkey);

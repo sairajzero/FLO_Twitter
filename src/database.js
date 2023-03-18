@@ -9,14 +9,14 @@ function init(db_name) {
             if (err) return reject(err);
             _db.serialize(() => {
 
-                _db.run("CREATE IN NOT EXISTS `Logs` ("
+                _db.run("CREATE TABLE IF NOT EXISTS `Logs` ("
                     + " `userID` CHAR(34) NOT NULL,"
                     + " `request` TEXT NOT NULL,"
                     + " `sign` VARCHAR(160) NOT NULL UNIQUE,"
                     + " `time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
                     + ")");
 
-                _db.run("CREATE IF NOT EXISTS `Tweets` ("
+                _db.run("CREATE TABLE IF NOT EXISTS `Tweets` ("
                     + " `id` VARCHAR(128) NOT NULL PRIMARY KEY,"
                     + " `time` BIGINT NOT NULL,"
                     + " `content` TEXT,"
@@ -24,19 +24,19 @@ function init(db_name) {
                     + " `retweet_id` VARCHAR(128)"
                     + ")");
 
-                _db.run("CREATE IF NOT EXISTS `Following`("
+                _db.run("CREATE TABLE IF NOT EXISTS `Following`("
                     + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
                     + " `time` BIGINT NOT NULL,"
                     + " `sign` VARCHAR(160) NOT NULL UNIQUE"
                     + ")");
 
-                _db.run("CREATE IF NOT EXISTS `Followers` ("
+                _db.run("CREATE TABLE IF NOT EXISTS `Followers` ("
                     + " `userID` CHAR(34) NOT NULL PRIMARY KEY,"
                     + " `time` BIGINT NOT NULL,"
                     + " `sign` VARCHAR(160) NOT NULL UNIQUE"
                     + ")");
 
-                _db.run("CREATE IF NOT EXISTS `Messages` ("
+                _db.run("CREATE TABLE IF NOT EXISTS `Messages` ("
                     + " `senderID` CHAR(34) NOT NULL,"
                     + " `receiverID` CHAR(34) NOT NULL,"
                     + " `time` BIGINT NOT NULL,"
@@ -46,7 +46,7 @@ function init(db_name) {
 
                 _db.get("SELECT time FROM `Logs` LIMIT 1", (err) => {
                     if (err) return reject(err);
-                    exports.close = _db.close;
+                    _exports.close = _db.close;
                     resolve("Database initiated");
                 })
             })
@@ -149,7 +149,7 @@ function getMessages(time = 0) {
     })
 }
 
-const exports = module.exports = {
+const _exports = module.exports = {
     init,
     log, checkDuplicateSign,
     storeTweet, removeTweet,
