@@ -1,0 +1,45 @@
+<html>
+
+<head>
+    <title>FLO Twitter</title>
+    <script src="scripts/floGlobals.js"></script>
+    <script src="scripts/lib.js"></script>
+    <script src="scripts/floCrypto.js"></script>
+    <script src="scripts/floBlockchainAPI.js"></script>
+    <script src="scripts/compactIDB.js"></script>
+    <script src="scripts/floCloudAPI.js"></script>
+    <script src="scripts/floDapps.js"></script>
+    <script src="scripts/tweeter.js"></script>
+    <script id="onLoadStartUp">
+        function onLoadStartUp() {
+            if (window.quick) return;
+            //floDapps.addStartUpFunction('Sample', Promised Function)
+            //floDapps.setAppObjectStores({sampleObs1:{}, sampleObs2:{options{autoIncrement:true, keyPath:'SampleKey'}, Indexes:{sampleIndex:{}}}})
+            //floDapps.setCustomPrivKeyInput( () => { FUNCTION BODY *must resolve private key* } )
+            floDapps.launchStartUp().then(result => {
+                console.log(result);
+                console.info(`Logged in as ${floDapps.user.id}`);
+                //App functions....
+                floTwitter.init().then(result => {
+                    var login_text;
+                    if (result === null)
+                        login_text = `Registration required for user (${floDapps.user.id})`
+                    else if (result === false)
+                        login_text = `RE-registration required for user (${floDapps.user.id})`;
+                    else if (typeof result == "object")
+                        login_text = `Welcome ${result.name} (${result.id})`;
+                    else login_text = "UNKNOWN ERROR";
+                    alert(login_text);
+                    console.info(login_text);
+                }).catch(error => console.error(error))
+            }).catch(error => console.error(error))
+        }
+    </script>
+</head>
+
+<body onload="onLoadStartUp()">
+    TEST_MODE
+    (use console)
+</body>
+
+</html>
