@@ -59,24 +59,22 @@
 
     function fetch_target(userID, api_uri, options) {
         return new Promise((resolve, reject) => {
-            getUserURL(userID).then(target_url => {
-                fetch_api(target_url, api_uri, options)
+            readUserDetails(userID).then(details => {
+                fetch_api(details.address, api_uri, options)
                     .then(result => resolve(result))
                     .catch(error => reject(error))
             }).catch(error => reject(error))
         })
     }
 
-    //fn to return onion address of target userID
-    function getUserURL(userID) {
+    const readUserDetails = floTwitter.readUserDetails = function (userID) {
         return new Promise((resolve, reject) => {
-            compactIDB.readData("users", userID).then(result => {
-                if (result) {
-                    let target_url = result.address;
-                    if (!target_url.match('http://'))
-                        resolve(target_url);
-                } else
-                    reject(CustomError(CustomError.BAD_RESPONSE_CODE, "UserID not found in IDB", errorCode.USER_NOT_FOUND))
+            let user_floID = floCrypto.toFloID(userID)
+            compactIDB.readData("users", user_floID).then(user_details => {
+                if (user_details)
+                    resolve(user_details);
+                else
+                    reject(CustomError(CustomError.BAD_RESPONSE_CODE, "User not found in IDB", errorCode.USER_NOT_FOUND))
             })
         })
     }
@@ -238,20 +236,43 @@
     }
 
     floTwitter.message = function (receiverID, message) {
-        let time = Date.now(),
-            senderID = floDapps.user.id,
-            pubKey = floDapps.user.public;
-        var request = { senderID, pubKey, receiverID, message, time };
-        request.sign = signRequest({ type: "message", senderID, receiverID, message, time });
-        console.debug(request);
+        return new Promise((resolve, reject) => {
+            readUserDetails(receiverID).then(receiver_details => {
+                let receiver_pubkey = receiver_details.pubkey;
+                let time = Date.now(),
+                    senderID = floDapps.user.id,
+                    pubKey = floDapps.user.public;
 
-        const options = {
-            method: "POST",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(request)
-        }
+                var request_target = { senderID, pubKey, receiverID, time };
+                if (receiver_pubkey) //encrypt using receiver pubkey for sending (if receiver pubkey available)
+                    request_target.message = JSON.stringify(floCrypto.encryptData(message, receiver_pubkey));
+                else
+                    request_target.message = message;
+                request_target.sign = signRequest({ type: "message", senderID, receiverID, message: request_target.message, time });
+                console.debug(request_target);
 
-        return responseParseAll([fetch_target(receiverID, '/message', options), fetch_self('/message', options)]);
+                const options_target = {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request_target)
+                }
+
+                var request_self = { senderID, pubKey, receiverID, time };
+                request_self.message = JSON.stringify(floCrypto.encryptData(message, pubKey));  //encrypt using self pubkey for storing
+                request_self.sign = signRequest({ type: "message", senderID, receiverID, message: request_self.message, time });
+                console.debug(request_self);
+
+                const options_self = {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(request_self)
+                }
+
+                responseParseAll([fetch_target(receiverID, '/message', options_target), fetch_self('/message', options_self)])
+                    .then(result => resolve(result))
+                    .catch(error => reject(error))
+            }).catch(error => reject(error))
+        })
 
     }
 
