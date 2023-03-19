@@ -98,7 +98,9 @@
         MISSING_PARAMETER: '099',
 
         //INCORRECT DATA: 1XX
-        USER_NOT_FOUND: '100',
+        USER_NOT_FOUND: '101',
+        ENTRY_NOT_FOUND: '102',
+        DUPLICATE_ENTRY: '103',
 
         //OTHERS
         NODES_OFFLINE: '404',

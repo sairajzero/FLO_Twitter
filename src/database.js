@@ -98,14 +98,21 @@ function getTweets(time) {
 
 function follow(userID, time, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Following` (userID, time, sign) VALUES (?,?,?)", [userID, time, sign],
-            (err) => err ? reject(err) : resolve(true));
+        _db.get("SELECT userID FROM `Following` WHERE userID=?", [userID], (err, row) => {
+            if (err) return reject(err);
+            if (row) return resolve(false); //entry already there
+            _db.run("INSERT INTO `Following` (userID, time, sign) VALUES (?,?,?)", [userID, time, sign], (err) => err ? reject(err) : resolve(true));
+        });
     })
 }
 
 function unfollow(userID) {
     return new Promise((resolve, reject) => {
-        _db.run("DELETE FROM `Following` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+        _db.get("SELECT userID FROM `Following` WHERE userID=?", [userID], (err, row) => {
+            if (err) return reject(err);
+            if (!row) return resolve(false); //entry not there
+            _db.run("DELETE FROM `Following` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+        });
     })
 }
 
@@ -118,14 +125,21 @@ function get_following() {
 
 function add_follower(userID, time, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Followers` (userID, time, sign) VALUES (?,?,?)", [userID, time, sign],
-            (err) => err ? reject(err) : resolve(true));
+        _db.get("SELECT userID FROM `Followers` WHERE userID=?", [userID], (err, row) => {
+            if (err) return reject(err);
+            if (row) return resolve(false); //entry already there
+            _db.run("INSERT INTO `Followers` (userID, time, sign) VALUES (?,?,?)", [userID, time, sign], (err) => err ? reject(err) : resolve(true));
+        });
     })
 }
 
 function rm_follower(userID) {
     return new Promise((resolve, reject) => {
-        _db.run("DELETE FROM `Followers` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+        _db.get("SELECT userID FROM `Followers` WHERE userID=?", [userID], (err, row) => {
+            if (err) return reject(err);
+            if (!row) return resolve(false); //entry not there
+            _db.run("DELETE FROM `Followers` WHERE userID=?", [userID], (err) => err ? reject(err) : resolve(true));
+        });
     })
 }
 

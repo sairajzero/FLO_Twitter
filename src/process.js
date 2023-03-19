@@ -24,17 +24,21 @@ function untweet(id, time, sign) {
 
 function follow(target, time, sign) {
     return new Promise((resolve, reject) => {
-        DB.follow(target, time, sign)
-            .then(result => resolve(result))
-            .catch(error => reject(error))
+        DB.follow(target, time, sign).then(result => {
+            if (!result)
+                reject(INVALID(eCode.DUPLICATE_ENTRY, "Already following"));
+            else resolve(result);
+        }).catch(error => reject(error))
     })
 }
 
 function unfollow(target) {
     return new Promise((resolve, reject) => {
-        DB.unfollow(target)
-            .then(result => resolve(result))
-            .catch(error => reject(error))
+        DB.unfollow(target).then(result => {
+            if (!result)
+                reject(INVALID(eCode.ENTRY_NOT_FOUND, "Not following"));
+            else resolve(result);
+        }).catch(error => reject(error))
     })
 }
 
@@ -57,17 +61,21 @@ function message_receive(sender, receiver, message, time, sign) {
 
 function add_follower(follower, time, sign) {
     return new Promise((resolve, reject) => {
-        DB.add_follower(follower, time, sign)
-            .then(result => resolve(result))
-            .catch(error => reject(error))
+        DB.add_follower(follower, time, sign).then(result => {
+            if (!result)
+                reject(INVALID(eCode.DUPLICATE_ENTRY, "Already a follower"));
+            else resolve(result);
+        }).catch(error => reject(error))
     })
 }
 
 function rm_follower(follower) {
     return new Promise((resolve, reject) => {
-        DB.rm_follower(follower)
-            .then(result => resolve(result))
-            .catch(error => reject(error))
+        DB.rm_follower(follower).then(result => {
+            if (!result)
+                reject(INVALID(eCode.ENTRY_NOT_FOUND, "Not a follower"));
+            else resolve(result);
+        }).catch(error => reject(error))
     })
 }
 
