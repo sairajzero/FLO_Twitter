@@ -127,18 +127,19 @@ function get_tweets(req, res) {
     if (typeof id !== 'undefined')
         getRequest(res, "Get Tweet", () => process.get_tweet(id));
     else {
-        if (!Number.isInteger(time) || time < 0)
+        time = parseInt(time);
+        if (isNaN(time) || time < 0)
             time = 0;
         getRequest(res, "Get Tweets", () => process.get_tweets(time));
     }
 }
 
 function get_followers(req, res) {
-    getRequest(res, "Get followers", () => process.get_followers);
+    getRequest(res, "Get followers", () => process.get_followers());
 }
 
 function get_following(req, res) {
-    getRequest(res, "Get following", () => process.get_following);
+    getRequest(res, "Get following", () => process.get_following());
 }
 
 module.exports = {

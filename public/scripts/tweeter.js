@@ -5,10 +5,45 @@
 
     const extractURL = url => ['http://', 'https://', '/'].reduce((a, p) => a.replace(p, ''), url);
 
+    const PROTOCOL_HTTP = 'http',
+        PROTOCOL_HTTPS = 'https',
+        PROTOCOL_WS = 'ws',
+        PROTOCOL_WSS = 'wss';
+
+    function decodeURL(url) {
+        let protocol, origin;
+        if (url.startsWith(PROTOCOL_HTTP) || url.startsWith(PROTOCOL_WS))
+            protocol = PROTOCOL_HTTP;
+        else if (url.startsWith(PROTOCOL_HTTPS) || url.startsWith(PROTOCOL_WSS))
+            protocol = PROTOCOL_HTTPS;
+        else
+            protocol = PROTOCOL_HTTP; //Default protocol
+        origin = extractURL(url);
+        return { protocol, origin }
+    }
+
+    function constructURL(protocol, origin, api = '') {
+        if (!api.startsWith('/'))
+            api = '/' + api;
+        return protocol + "://" + origin + api;
+    }
+
+    function encodeURL_http(url, api = '/') {
+        let decoded_url = decodeURL(url);
+        return constructURL(decoded_url.protocol, decoded_url.origin, api);
+    }
+
+    function encodeURL_ws(url, api = '/') {
+        let decoded_url = decodeURL(url);
+        var ws_protocol = decoded_url.protocol === PROTOCOL_HTTPS ? PROTOCOL_WSS : PROTOCOL_WS;
+        return constructURL(ws_protocol, decoded_url.origin, api);
+    }
+
     function fetch_api(server_uri, api_uri, options) {
         return new Promise((resolve, reject) => {
-            console.debug(server_uri + api_uri);
-            (options ? fetch(server_uri + api_uri, options) : fetch(server_uri + api_uri))
+            let url = encodeURL_http(server_uri, api_uri)
+            console.debug(url);
+            (options ? fetch(url, options) : fetch(url))
                 .then(result => resolve(result))
                 .catch(error => reject(error))
         })
@@ -36,9 +71,11 @@
     function getUserURL(userID) {
         return new Promise((resolve, reject) => {
             compactIDB.readData("users", userID).then(result => {
-                if (result)
-                    resolve(result.address);
-                else
+                if (result) {
+                    let target_url = result.address;
+                    if (!target_url.match('http://'))
+                        resolve(target_url);
+                } else
                     reject(CustomError(CustomError.BAD_RESPONSE_CODE, "UserID not found in IDB", errorCode.USER_NOT_FOUND))
             })
         })
@@ -124,7 +161,7 @@
     const reqObj2Str = floTwitter.reqObj2Str = function (reqObj) {
         let keys = Object.keys(reqObj).sort();
         let vals = [];
-        keys.forEach(k => { if (typeof reqObj[vals] !== 'undefined') vals.push(k + ":" + reqObj[k]); })
+        keys.forEach(k => { if (typeof reqObj[k] !== 'undefined') vals.push(k + ":" + reqObj[k]); })
         return vals.join("|")
     }
 
