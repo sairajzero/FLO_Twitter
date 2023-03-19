@@ -56,7 +56,7 @@ function init(db_name) {
 
 function log(userID, request, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Logs` (userID, request, sign) VALUE (?)", [[userID, request, sign]],
+        _db.run("INSERT INTO `Logs` (userID, request, sign) VALUES (?,?,?)", [userID, request, sign],
             (err) => err ? reject(err) : resolve(true));
     })
 }
@@ -70,7 +70,7 @@ function checkDuplicateSign(sign) {
 
 function storeTweet(id, content, time, sign, retweet_id) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Tweets` (id, content, time, sign, retweet_id) VALUE (?)", [[id, content, time, sign, retweet_id]],
+        _db.run("INSERT INTO `Tweets` (id, content, time, sign, retweet_id) VALUES (?,?,?,?,?)", [id, content, time, sign, retweet_id],
             (err) => err ? reject(err) : resolve(true));
     })
 }
@@ -98,7 +98,7 @@ function getTweets(time) {
 
 function follow(userID, time, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Following` (userID, time, sign) VALUE (?)", [[userID, time, sign]],
+        _db.run("INSERT INTO `Following` (userID, time, sign) VALUES (?,?,?)", [userID, time, sign],
             (err) => err ? reject(err) : resolve(true));
     })
 }
@@ -118,7 +118,7 @@ function get_following() {
 
 function add_follower(userID, time, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Followers` (userID, time, sign) VALUE (?)", [[userID, time, sign]],
+        _db.run("INSERT INTO `Followers` (userID, time, sign) VALUES (?,?,?)", [userID, time, sign],
             (err) => err ? reject(err) : resolve(true));
     })
 }
@@ -137,7 +137,7 @@ function get_followers() {
 
 function storeMessage(senderID, receiverID, time, message, sign) {
     return new Promise((resolve, reject) => {
-        _db.run("INSERT INTO `Messages` (senderID, receiverID, time, message, sign) VALUE (?)", [[senderID, receiverID, time, message, sign]],
+        _db.run("INSERT INTO `Messages` (senderID, receiverID, time, message, sign) VALUES (?,?,?,?,?)", [senderID, receiverID, time, message, sign],
             (err) => err ? reject(err) : resolve(true));
     })
 }

@@ -1,5 +1,5 @@
 'use strict';
-const { INTERNAL, INVALID, eCode } = require("./error");
+const { INTERNAL, INVALID, eCode, reqObj2Str } = require("./error");
 const DB = require("./database");
 const process = require('./process');
 const keys = require("./keys");
@@ -57,9 +57,9 @@ function validateRequest(request, privateAccess, sign, userID, pubKey) {
         else if (!floCrypto.verifyPubKey(pubKey, userID))
             reject(INVALID(eCode.INVALID_PUBLIC_KEY, "Invalid public key"));
         else {
-            let req_str = Object.keys(request).sort().map(r => r + ":" + request[r]).join("|");
+            let req_str = reqObj2Str(request);
             try {
-                if (!floCrypto.verifySign(req_str, sign, signKey))
+                if (!floCrypto.verifySign(req_str, sign, pubKey))
                     reject(INVALID(eCode.INVALID_SIGNATURE, "Invalid request signature"));
                 else DB.checkDuplicateSign(sign).then(duplicate => {
                     if (duplicate.length)

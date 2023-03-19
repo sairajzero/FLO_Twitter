@@ -1,4 +1,4 @@
-const eCode = require('../public/scripts/tweeter').errorCode
+const { errorCode, reqObj2Str } = require('../public/scripts/tweeter')
 
 const INVALID = function (ecode, message) {
     if (!(this instanceof INVALID))
@@ -19,8 +19,8 @@ const INTERNAL = function INTERNAL(message) {
 }
 INTERNAL.e_code = 500;
 INTERNAL.prototype.toString = function () {
-    return "E" + eCode.INTERNAL_ERROR + ": " + this.message;
+    return "E" + errorCode.INTERNAL_ERROR + ": " + this.message;
 }
 INTERNAL.str = (ecode, message) => INTERNAL(ecode, message).toString();
 
-module.exports = { INTERNAL, INVALID, eCode }
+module.exports = { INTERNAL, INVALID, eCode: errorCode, reqObj2Str }

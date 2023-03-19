@@ -1,7 +1,7 @@
 (function (EXPORTS) {
     const floTwitter = EXPORTS;
 
-    var host_url = window.location.origin;
+    var host_url = typeof window != 'undefined' ? window.location.origin : undefined;
 
     const extractURL = url => ['http://', 'https://', '/'].reduce((a, p) => a.replace(p, ''), url);
 
@@ -104,7 +104,7 @@
                     response.text()
                         .then(result => resolve(result))
                         .catch(error => reject(CustomError(CustomError.BAD_RESPONSE_CODE, error)));
-            }).catch(error => CustomError(CustomError.NODES_OFFLINE, error))
+            }).catch(error => CustomError(CustomError.NODES_OFFLINE, error.toString()))
         });
     }
 
@@ -202,7 +202,7 @@
         let time = Date.now(),
             senderID = floDapps.user.id,
             pubKey = floDapps.user.public;
-        var request = { senderID, pubKey, receiverID, time };
+        var request = { senderID, pubKey, receiverID, message, time };
         request.sign = signRequest({ type: "message", senderID, receiverID, message, time });
         console.debug(request);
 
@@ -212,7 +212,7 @@
             body: JSON.stringify(request)
         }
 
-        return responseParseAll([fetch_target('/message', options), fetch_self(targetID, '/message', options)]);
+        return responseParseAll([fetch_target(receiverID, '/message', options), fetch_self('/message', options)]);
 
     }
 
