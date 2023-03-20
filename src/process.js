@@ -48,7 +48,7 @@ function unfollow(target) {
 function message_sent(sender, receiver, message, time, sign) {
     return new Promise((resolve, reject) => {
         DB.storeMessage(sender, receiver, time, message, sign).then(result => {
-            ws_conns.forEach(ws => ws.send(result)); //forward to all websockets
+            ws_conns.forEach(ws => ws.send(JSON.stringify(result))); //forward to all websockets
             resolve(true);
         }).catch(error => reject(error))
     })
@@ -63,13 +63,12 @@ function get_messages(time) {
 }
 
 function sync_messages(time, ws) {
-    console.debug("instance", ws instanceof websocket.WebSocket, ws instanceof websocket)
-    if (!(ws instanceof websocket.WebSocket))
+    if (!(ws instanceof websocket))
         return;
     get_messages(time).then(result => {
         if (ws.readyState === ws.OPEN)
-            result.forEach(d => ws.send(d));
-    }).catch(error => reject(error));
+            result.forEach(d => ws.send(JSON.stringify(d)));
+    }).catch(error => console.error(error));
     ws_conns.push(ws);
     ws.on('close', () => { //remove ws from container when ws is closed
         let i = ws_conns.indexOf(ws);
@@ -82,7 +81,7 @@ function sync_messages(time, ws) {
 function message_receive(sender, receiver, message, time, sign) {
     return new Promise((resolve, reject) => {
         DB.storeMessage(sender, receiver, time, message, sign).then(result => {
-            ws_conns.forEach(ws => ws.send(result)); //forward to all websockets
+            ws_conns.forEach(ws => ws.send(JSON.stringify(result))); //forward to all websockets
             resolve(true);
         }).catch(error => reject(error))
     })

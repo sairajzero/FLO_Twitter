@@ -12,7 +12,7 @@ try {
 }
 
 if (!process.argv.includes("--debug"))
-    global.console.debug = () => null;
+    console.debug = () => null;
 
 if (process.argv.includes("--trace")) {
     var log = console.log;
