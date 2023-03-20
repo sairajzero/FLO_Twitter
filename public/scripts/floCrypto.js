@@ -1,4 +1,4 @@
-(function (EXPORTS) { //floCrypto v2.3.6
+(function (EXPORTS) { //floCrypto v2.3.6a
     /* FLO Crypto Operators */
     'use strict';
     const floCrypto = EXPORTS;
@@ -155,7 +155,6 @@
         hashID: {
             value: (str) => {
                 let bytes = ripemd160(Crypto.SHA256(str, { asBytes: true }), { asBytes: true });
-                console.debug(bytes);
                 bytes.unshift(bitjs.pub);
                 var hash = Crypto.SHA256(Crypto.SHA256(bytes, {
                     asBytes: true

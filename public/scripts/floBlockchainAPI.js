@@ -1,4 +1,4 @@
-(function (EXPORTS) { //floBlockchainAPI v2.4.3
+(function (EXPORTS) { //floBlockchainAPI v2.4.4
     /* FLO Blockchain Operator to send/receive data from blockchain using API calls*/
     'use strict';
     const floBlockchainAPI = EXPORTS;
@@ -9,9 +9,9 @@
             FLO: ['https://flosight.duckdns.org/', 'https://flosight.ranchimall.net/'],
             FLO_TEST: ['https://testnet-flosight.duckdns.org', 'https://testnet.flocha.in/']
         },
-        sendAmt: 0.001,
-        fee: 0.0005,
-        minChangeAmt: 0.0005,
+        sendAmt: 0.0003,
+        fee: 0.0002,
+        minChangeAmt: 0.0002,
         receiverID: floGlobals.adminID
     };
 
@@ -261,11 +261,11 @@
      * @param  {boolean} preserveRatio (optional) preserve ratio or equal contribution
      * @return {Promise}
      */
-    floBlockchainAPI.writeDataMultiple = function (senderPrivKeys, data, receivers = [DEFAULT.receiverID], preserveRatio = true) {
+    floBlockchainAPI.writeDataMultiple = function (senderPrivKeys, data, receivers = [DEFAULT.receiverID], options = {}) {
         return new Promise((resolve, reject) => {
             if (!Array.isArray(senderPrivKeys))
                 return reject("Invalid senderPrivKeys: SenderPrivKeys must be Array");
-            if (!preserveRatio) {
+            if (options.preserveRatio === false) {
                 let tmp = {};
                 let amount = (DEFAULT.sendAmt * receivers.length) / senderPrivKeys.length;
                 senderPrivKeys.forEach(key => tmp[key] = amount);
@@ -275,7 +275,7 @@
                 return reject("Invalid receivers: Receivers must be Array");
             else {
                 let tmp = {};
-                let amount = DEFAULT.sendAmt;
+                let amount = options.sendAmt || DEFAULT.sendAmt;
                 receivers.forEach(floID => tmp[floID] = amount);
                 receivers = tmp
             }
