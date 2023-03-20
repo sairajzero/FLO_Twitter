@@ -152,7 +152,7 @@ function get_followers() {
 function storeMessage(senderID, receiverID, time, message, sign) {
     return new Promise((resolve, reject) => {
         _db.run("INSERT INTO `Messages` (senderID, receiverID, time, message, sign) VALUES (?,?,?,?,?)", [senderID, receiverID, time, message, sign],
-            (err) => err ? reject(err) : resolve(true));
+            (err) => err ? reject(err) : resolve({ senderID, receiverID, time, message, sign }));
     })
 }
 

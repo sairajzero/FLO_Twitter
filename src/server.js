@@ -33,7 +33,8 @@ app.use(function (req, res, next) {
 //self
 app.post('/tweet', Request.tweet);
 app.post('/untweet', Request.untweet);
-app.ws('/message', Request.onmessage);
+app.post('/messages', Request.get_messages);
+app.ws('/messages', Request.sync_messages);
 
 //all (switch behaviour when self/others)
 app.post('/message', Request.message);

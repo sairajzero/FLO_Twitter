@@ -4,7 +4,7 @@ const DB = require("./database");
 const process = require('./process');
 const keys = require("./keys");
 
-const SIGN_EXPIRE_TIME = 5 * 60 * 1000; //5mins
+const SIGN_EXPIRE_TIME = 1 * 60 * 1000; //1 min
 
 function getRequest(res, rText, callback) {
     callback().then(result => {
@@ -118,6 +118,48 @@ function message(req, res) {
     );
 }
 
+var tmpSigns = [];
+function isDuplicateTmpSign(sign) {
+    if (tmpSigns.includes(sign))
+        return true;
+    tmpSigns.push(sign);
+    setTimeout(() => {
+        let i = tmpSigns.indexOf(sign);
+        if (i !== -1)
+            tmpSigns.splice(i, 1);
+    }, SIGN_EXPIRE_TIME);
+}
+
+function get_messages(req, res) {
+    let { userID, pubKey, afterTime, time, sign } = req.body;
+    if (isDuplicateTmpSign(sign))
+        return res.status(INVALID.e_code).send(INVALID.str(eCode.DUPLICATE_SIGNATURE, "Duplicate signature"));
+    processRequest(res, true, userID, pubKey, sign, "Get message", { type: "get_message", afterTime, time },
+        () => process.get_messages(afterTime || 0), false);
+}
+
+function sync_messages(ws, req) {
+    let { key } = req.query;
+    try {
+        key = JSON.parse(Buffer.from(key, 'base64').toString());
+    } catch {
+        return ws.send(INVALID.str(eCode.INVALID_REQUEST_FORMAT, "Unable to parse request"));
+    }
+    let { userID, pubKey, afterTime, time, sign } = key;
+    if (isDuplicateTmpSign(sign))
+        return ws.send(INVALID.str(eCode.DUPLICATE_SIGNATURE, "Duplicate signature"));
+    validateRequest({ type: "sync_messages", afterTime, time }, true, sign, userID, pubKey).then(() => {
+        process.sync_messages(afterTime, ws);
+    }).catch(error => {
+        if (error instanceof INVALID)
+            ws.send(error.toString());
+        else {
+            console.error(error);
+            ws.send(INTERNAL.str("Request processing failed! Try again later!"));
+        }
+    })
+}
+
 function get_user(req, res) {
     getRequest(res, "Get User ID", () => process.get_user());
 }
@@ -146,6 +188,7 @@ module.exports = {
     tweet, untweet,
     follow, unfollow,
     message,
+    get_messages, sync_messages,
     get_user,
     get_tweets,
     get_followers, get_following

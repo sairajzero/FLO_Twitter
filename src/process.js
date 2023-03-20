@@ -1,8 +1,11 @@
 const { INVALID, eCode } = require("./error");
 const DB = require("./database");
 const keys = require("./keys");
+const websocket = require('ws')
 
 const tweet_id = (content, time) => keys.address_b58 + "_" + bitjs.Base58.encode(Crypto.SHA256(time + content, { asBytes: true }));
+
+const ws_conns = [];
 
 /* Private API*/
 function tweet(content, time, sign, retweet_id) {
@@ -44,18 +47,44 @@ function unfollow(target) {
 
 function message_sent(sender, receiver, message, time, sign) {
     return new Promise((resolve, reject) => {
-        DB.storeMessage(sender, receiver, time, message, sign)
+        DB.storeMessage(sender, receiver, time, message, sign).then(result => {
+            ws_conns.forEach(ws => ws.send(result)); //forward to all websockets
+            resolve(true);
+        }).catch(error => reject(error))
+    })
+}
+
+function get_messages(time) {
+    return new Promise((resolve, reject) => {
+        DB.getMessages(time)
             .then(result => resolve(result))
             .catch(error => reject(error))
+    })
+}
+
+function sync_messages(time, ws) {
+    console.debug("instance", ws instanceof websocket.WebSocket, ws instanceof websocket)
+    if (!(ws instanceof websocket.WebSocket))
+        return;
+    get_messages(time).then(result => {
+        if (ws.readyState === ws.OPEN)
+            result.forEach(d => ws.send(d));
+    }).catch(error => reject(error));
+    ws_conns.push(ws);
+    ws.on('close', () => { //remove ws from container when ws is closed
+        let i = ws_conns.indexOf(ws);
+        if (i !== -1)
+            ws_conns.splice(i, 1);
     })
 }
 
 /* Public API */
 function message_receive(sender, receiver, message, time, sign) {
     return new Promise((resolve, reject) => {
-        DB.storeMessage(sender, receiver, time, message, sign)
-            .then(result => resolve(result))
-            .catch(error => reject(error))
+        DB.storeMessage(sender, receiver, time, message, sign).then(result => {
+            ws_conns.forEach(ws => ws.send(result)); //forward to all websockets
+            resolve(true);
+        }).catch(error => reject(error))
     })
 }
 
@@ -127,6 +156,7 @@ module.exports = {
     follow, unfollow,
     add_follower, rm_follower,
     message_sent, message_receive,
+    get_messages, sync_messages,
     get_user,
     get_tweet, get_tweets,
     get_followers, get_following
