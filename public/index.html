@@ -7,15 +7,15 @@
     <script src="scripts/floCrypto.js"></script>
     <script src="scripts/floBlockchainAPI.js"></script>
     <script src="scripts/compactIDB.js"></script>
-    <script src="scripts/floCloudAPI.js"></script>
     <script src="scripts/floDapps.js"></script>
     <script src="scripts/tweeter.js"></script>
     <script id="onLoadStartUp">
         function onLoadStartUp() {
-            if (window.quick) return;
             //floDapps.addStartUpFunction('Sample', Promised Function)
             //floDapps.setAppObjectStores({sampleObs1:{}, sampleObs2:{options{autoIncrement:true, keyPath:'SampleKey'}, Indexes:{sampleIndex:{}}}})
             //floDapps.setCustomPrivKeyInput( () => { FUNCTION BODY *must resolve private key* } )
+            floDapps.startUpOptions['cloud'] = false;
+            floDapps.startUpOptions['app_config'] = false;
             floDapps.launchStartUp().then(result => {
                 console.log(result);
                 console.info(`Logged in as ${floDapps.user.id}`);

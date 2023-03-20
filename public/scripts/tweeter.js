@@ -320,7 +320,7 @@
     floTwitter.registerUser = function (userID, name, address, privateKey) {
         return new Promise((resolve, reject) => {
             let user_floID = floCrypto.toFloID(userID);
-            if (floCrypto.verifyPrivKey(privateKey, user_floID))
+            if (!floCrypto.verifyPrivKey(privateKey, user_floID))
                 return reject(CustomError(CustomError.BAD_REQUEST_CODE, "Invalid Private key", errorCode.INVALID_PRIVATE_KEY))
             if (!validateName(name))
                 return reject(CustomError(CustomError.BAD_REQUEST_CODE, "Invalid name", errorCode.INVALID_CHARACTERS))

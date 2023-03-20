@@ -1,4 +1,4 @@
-(function (EXPORTS) { //floDapps v2.3.3
+(function (EXPORTS) { //floDapps v2.3.4
     /* General functions for FLO Dapps*/
     'use strict';
     const floDapps = EXPORTS;
@@ -229,10 +229,31 @@
         })
     }
 
+    const startUpOptions = {
+        cloud: true,
+        app_config: true,
+    }
+
+    floDapps.startUpOptions = {
+        set app_config(val) {
+            if (val === true || val === false)
+                startUpOptions.app_config = val;
+        },
+        get app_config() { return startUpOptions.app_config },
+
+        set cloud(val) {
+            if (val === true || val === false)
+                startUpOptions.cloud = val;
+        },
+        get cloud() { return startUpOptions.cloud },
+    }
+
     const startUpFunctions = [];
 
     startUpFunctions.push(function readSupernodeListFromAPI() {
         return new Promise((resolve, reject) => {
+            if (!startUpOptions.cloud)
+                return resolve("No cloud for this app");
             compactIDB.readData("lastTx", floCloudAPI.SNStorageID, DEFAULT.root).then(lastTx => {
                 floBlockchainAPI.readData(floCloudAPI.SNStorageID, {
                     ignoreOld: lastTx,
@@ -265,6 +286,8 @@
 
     startUpFunctions.push(function readAppConfigFromAPI() {
         return new Promise((resolve, reject) => {
+            if (!startUpOptions.app_config)
+                return resolve("No configs for this app");
             compactIDB.readData("lastTx", `${DEFAULT.application}|${DEFAULT.adminID}`, DEFAULT.root).then(lastTx => {
                 floBlockchainAPI.readData(DEFAULT.adminID, {
                     ignoreOld: lastTx,
@@ -306,6 +329,8 @@
 
     startUpFunctions.push(function loadDataFromAppIDB() {
         return new Promise((resolve, reject) => {
+            if (!startUpOptions.cloud)
+                return resolve("No cloud for this app");
             var loadData = ["appObjects", "generalData", "lastVC"]
             var promises = []
             for (var i = 0; i < loadData.length; i++)
@@ -417,7 +442,8 @@
                     try {
                         user_public = floCrypto.getPubKeyHex(privKey);
                         user_id = floCrypto.getAddress(privKey);
-                        floCloudAPI.user(user_id, privKey); //Set user for floCloudAPI
+                        if (startUpOptions.cloud)
+                            floCloudAPI.user(user_id, privKey); //Set user for floCloudAPI
                         user_priv_wrap = () => checkIfPinRequired(key);
                         let n = floCrypto.randInt(12, 20);
                         aes_key = floCrypto.randString(n);
@@ -580,6 +606,8 @@
 
     floDapps.manageAppConfig = function (adminPrivKey, addList, rmList, settings) {
         return new Promise((resolve, reject) => {
+            if (!startUpOptions.app_config)
+                return reject("No configs for this app");
             if (!Array.isArray(addList) || !addList.length) addList = undefined;
             if (!Array.isArray(rmList) || !rmList.length) rmList = undefined;
             if (!settings || typeof settings !== "object" || !Object.keys(settings).length) settings = undefined;
@@ -604,6 +632,8 @@
 
     floDapps.manageAppTrustedIDs = function (adminPrivKey, addList, rmList) {
         return new Promise((resolve, reject) => {
+            if (!startUpOptions.app_config)
+                return reject("No configs for this app");
             if (!Array.isArray(addList) || !addList.length) addList = undefined;
             if (!Array.isArray(rmList) || !rmList.length) rmList = undefined;
             if (!addList && !rmList)
