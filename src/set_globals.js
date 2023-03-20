@@ -1,9 +1,5 @@
 'use strict';
 
-//fetch for node js (used in floBlockchainAPI.js)
-//global.fetch = require("node-fetch"); //node-fetch v2
-import fetch from 'node-fetch'; global.fetch = fetch; //node-fetch v3
-
 //Set browser paramaters from param.json (or param-default.json)
 var param;
 try {
@@ -17,3 +13,19 @@ try {
 
 if (!process.argv.includes("--debug"))
     global.console.debug = () => null;
+
+if (process.argv.includes("--trace")) {
+    var log = console.log;
+    console.log = function () {
+        log.apply(console, arguments);
+        // Print the stack trace
+        console.trace();
+    };
+
+    var error = console.error;
+    console.error = function () {
+        error.apply(console, arguments);
+        // Print the stack trace
+        console.trace();
+    };
+}
