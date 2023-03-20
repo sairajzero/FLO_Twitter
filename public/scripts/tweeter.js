@@ -57,6 +57,20 @@
         })
     }
 
+    function ws_self(api_uri, onmessage, options = {}) {
+        return new Promise((resolve, reject) => {
+            let url = encodeURL_ws(host_url, api_uri);
+            var ws = new WebSocket(url);
+            ws.addEventListener('error', (error) => reject(error));
+            ws.addEventListener('open', () => resolve(ws));
+            ws.addEventListener('message', (evt) => onmessage(evt.data));
+            if (options.onopen instanceof Function)
+                ws.addEventListener('open', options.onopen);
+            if (options.onclose instanceof Function)
+                ws.addEventListener('close', options.onclose);
+        })
+    }
+
     function fetch_target(userID, api_uri, options) {
         return new Promise((resolve, reject) => {
             readUserDetails(userID).then(details => {
@@ -276,6 +290,42 @@
 
     }
 
+    floTwitter.getMessages = function (afterTime = undefined) {
+        let time = Date.now(),
+            userID = floDapps.user.id,
+            pubKey = floDapps.user.public;
+        var request = { userID, pubKey, afterTime, time };
+        request.sign = signRequest({ type: "get_message", afterTime, time });
+        request.pubKey = floDapps.user.public;
+        console.debug(request);
+
+        return responseParse(fetch_self('/messages', {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(request)
+        }));
+    }
+
+    const activeWs = {};
+
+    floTwitter.listenMessages = function (callback, afterTime = undefined) {
+        let time = Date.now(),
+            userID = floDapps.user.id,
+            pubKey = floDapps.user.public;
+        var request = { userID, pubKey, afterTime, time };
+        request.sign = signRequest({ type: "sync_messages", afterTime, time });
+        request.pubKey = floDapps.user.public;
+        console.debug(request);
+        return new Promise((resolve, reject) => {
+            let api = '/messages?key=' + btoa(JSON.stringify(request))
+            ws_self(api, callback).then(ws => {
+                let req_id = floCrypto.randString(4);
+                activeWs[req_id] = ws;
+                resolve(req_id);
+            }).catch(error => reject(error))
+        })
+    }
+
     floTwitter.getTweets = function (userID, time = undefined) {
         let api = '/tweets' + (time ? '?time=' + time : "");
         if (userID == floDapps.user.id)
@@ -413,7 +463,6 @@
             var obj = {
                 tweets: {},
                 messages: {},
-                addresses: {},
                 users: {},
                 lastTx: {},
                 appendix: {},
