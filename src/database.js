@@ -1,10 +1,11 @@
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 var _db;
 
 function init(db_name) {
     return new Promise((resolve, reject) => {
-        const DATABASE_NAME = `./${db_name}.db`;
+        const DATABASE_NAME = path.resolve(__dirname, '..', 'args', `${db_name}.db`);
         _db = new sqlite3.Database(DATABASE_NAME, (err) => {
             if (err) return reject(err);
             _db.serialize(() => {

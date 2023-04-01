@@ -5,7 +5,7 @@ var param;
 try {
     param = require('../args/param.json');
 } catch {
-    param = require('../args/param-default.json');
+    param = require('./param-default.json');
 } finally {
     for (let p in param)
         global[p] = param[p];
