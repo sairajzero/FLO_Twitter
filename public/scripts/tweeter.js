@@ -479,20 +479,19 @@
     floTwitter.init = function () {
         return new Promise((resolve, reject) => {
             initUserDB().then(result => {
-                getUser(floDapps.user.id).then(details => {
-                    responseParse(fetch_self('/user')).then(server => {
-                        if (floCrypto.isSameAddr(server.floID, floDapps.user.id)) {
-                            if (extractURL(details.address) === extractURL(host_url))
-                                resolve(details);
-                            else resolve(false); //registered address is different from current
-                        } else
-                            reject(CustomError(CustomError.BAD_REQUEST_CODE, "Incorrect Server", errorCode.ACCESS_DENIED))
-                    }).catch(error => reject(error))
-                }).catch(error => {
-                    if (error instanceof CustomError && error.code === errorCode.USER_NOT_FOUND)
-                        return resolve(null);   //user not registered
-                    else reject(error);
-                })
+                responseParse(fetch_self('/user')).then(server => {
+                    if (!floCrypto.isSameAddr(server.floID, floDapps.user.id))
+                        return reject(CustomError(CustomError.BAD_REQUEST_CODE, "Incorrect Server", errorCode.ACCESS_DENIED));
+                    getUser(floDapps.user.id).then(details => {
+                        if (extractURL(details.address) === extractURL(host_url))
+                            resolve(details);
+                        else resolve(false); //registered address is different from current
+                    }).catch(error => {
+                        if (error instanceof CustomError && error.code === errorCode.USER_NOT_FOUND)
+                            return resolve(null);   //user not registered
+                        else reject(error);
+                    })
+                }).catch(error => reject(error))
             }).catch(error => reject(error))
         })
     }
