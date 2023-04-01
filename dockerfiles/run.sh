@@ -1,7 +1,7 @@
 #!/bin/sh
 
 tor &
-npm start --prefix ./app -- -u=$U &
+npm start -- -u=$U &
 sleep 5s
-cat .hidden_service/hostname
+cat args/.hidden_service/hostname
 wait
