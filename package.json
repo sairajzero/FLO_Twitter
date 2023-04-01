@@ -1,0 +1,26 @@
+{
+  "name": "flo_twitter",
+  "version": "1.0.0",
+  "description": "This is a peer-peer Twitter like application totally encrypted in transit without needing a central server. \r Current web based technologies have a inbound address problem namely ordinary web users do not have a fixed IP, so it is not easy to establish connection to them.  \r We propose to solve that problem by using TOR addresses for ordinary users which can provide a fixed inbound routable address on Internet for everyone including for those on dynamic IPs. \r The TOR Project very easy to connect to a TOR based service. We believe it can form a stable architecture for peer to peer services. \r Another limitation of current web based technologies is ordinary users cannot allocate a fixed port using just their web browsers for inbound connections. So every user will need to run their own webservers on which they can receive chat messages. We could not find a way to eliminate webservers. But we have found a very simple webserver called Mongoose Webserver, where a user can invoke a fixed port based service on click of a single button. \r To facilitate globally unique identification of every peer, we propose to use FLO Blockchain IDs. Then user can then attach his TOR address onto his FLO id inside the FLO Blockchain. \r Since the blockchain data is immutable, it will provide a continous uniterruptable source of connection information based on user's FLO ID.",
+  "main": "src/main.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-ws": "^5.0.2",
+    "sqlite3": "^5.1.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sairajzero/FLO_Twitter.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sairajzero/FLO_Twitter/issues"
+  },
+  "homepage": "https://github.com/sairajzero/FLO_Twitter#readme"
+}
