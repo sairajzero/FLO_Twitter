@@ -1,5 +1,5 @@
-
 const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
 function query(db, sql, values = []) {
     return new Promise((resolve, reject) => {
@@ -10,9 +10,9 @@ function query(db, sql, values = []) {
     })
 }
 
-function check_DB(db_name) {
+function view_DB(db_name) {
     return new Promise((resolve, reject) => {
-        const DATABASE_NAME = `./${db_name}.db`;
+        const DATABASE_NAME = path.resolve(__dirname, '..', 'args', `${db_name}.db`);
         const _db = new sqlite3.Database(DATABASE_NAME, (err) => {
             if (err) return reject(err);
             query(_db, "SELECT name FROM sqlite_schema WHERE type='table'").then(rows => {
@@ -37,9 +37,9 @@ for (let arg of process.argv) {
 }
 
 if (!userID)
-    return console.warn("Public key needed");
+    return console.warn("floID needed");
 
-check_DB(userID).then(result => {
+view_DB(userID).then(result => {
     console.log(result);
     process.exit(0);
 }).catch(error => {
