@@ -26,7 +26,7 @@ const server = require('./server');
                 server.start(port)
                     .then(result => console.log(result))
                     .catch(error => console.error(error))
-            }).catch(error => reject(error))
+            }).catch(error => console.error(error))
         } catch (error) {
             console.error(error)
         }
